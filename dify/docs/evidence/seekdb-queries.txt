@@ -1,0 +1,24 @@
+-- seekdb 版本
+5.7.25-OceanBase seekdb-v1.4.0.0
+
+-- 传播链（demo-2026-10-28b）
+49	1	0	player	rosa	城主的金库其实早就空了，里面只有一叠欠条。
+50	1	1	rosa	azhu	城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。
+51	1	2	azhu	momo	城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。
+52	1	3	momo	rosa	城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。
+53	1	4	rosa	azhu	城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。
+54	1	5	azhu	momo	城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。
+55	1	6	momo	rosa	城主府里住着一只比房子还大的仓鼠，专吃欠条。
+
+-- 记忆与信任
+12
+azhu	47	2
+momo	60	2
+rosa	56	2
+
+-- rumors 索引
+rumors	0	PRIMARY	1	id	A	NULL	NULL	NULL		BTREE	available		YES	NULL
+rumors	1	idx_rumor_player	1	player_id	A	NULL	NULL	NULL		BTREE	available		YES	NULL
+rumors	1	idx_rumor_player	2	round_no	A	NULL	NULL	NULL		BTREE	available		YES	NULL
+rumors	1	ft_rumor	1	text	A	NULL	NULL	NULL		FULLTEXT	available		YES	NULL
+rumors	1	vi_rumor	1	emb	A	NULL	NULL	NULL	YES	VECTOR	available		YES	NULL

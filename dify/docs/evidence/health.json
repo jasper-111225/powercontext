@@ -1,0 +1,15 @@
+{
+    "ok": true,
+    "seekdb": {
+        "ok": true,
+        "version": "5.7.25-OceanBase seekdb-v1.4.0.0",
+        "database": "echo_tavern",
+        "tables": 5
+    },
+    "embedding": {
+        "ok": true,
+        "model": "qwen3-embedding:0.6b",
+        "dim": 1024,
+        "base_url": "http://127.0.0.1:11434/v1"
+    }
+}

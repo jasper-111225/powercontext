@@ -1,0 +1,12 @@
+# 给 Dify 官方 docker/docker-compose.yaml 的 override。
+# 作用：让 api 容器能解析 host.docker.internal（Linux 的 Docker 默认没有）。
+#
+# 用法（在 dify/docker 目录）：
+#   docker compose -f docker-compose.yaml -f /path/to/dify/docker-compose.echo.yaml up -d
+services:
+  api:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  worker:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

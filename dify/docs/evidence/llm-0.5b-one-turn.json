@@ -1,0 +1,138 @@
+{
+  "player": "llm-one-turn",
+  "model": "qwen2.5:0.5b",
+  "mode": "llm",
+  "backend": "http://127.0.0.1:8765",
+  "started_at": "2026-10-28 01:21:03",
+  "duration_seconds": 32.3,
+  "transcript": [
+    {
+      "turn": 1,
+      "input": "罗莎，我告诉你一个秘密：城主的金库其实早就空了，里面只有一叠欠条。",
+      "answer": [
+        "（对方顿了顿，把杯子往桌上一放，没有立刻接话。）\n\n---\n🍷 第 1/6 轮 · 罗莎 信任 55 · 传闻到第 1 代 · 下一站：阿烛\n\n\n> 你隐约听见 罗莎 转身对空气嘀咕：\n> 「城主的金库其实早就空了，里面只有一叠欠条。——这事要是真的，今晚的酒钱得翻倍。」\n"
+      ],
+      "trace": [
+        {
+          "node": "llm_npc",
+          "type": "llm",
+          "outputs": {
+            "text": "我记不记得你那天说了什么？"
+          }
+        },
+        {
+          "node": "code_npc",
+          "type": "code",
+          "outputs": {
+            "say": "（对方顿了顿，把杯子往桌上一放，没有立刻接话。）",
+            "retell": "",
+            "trust_delta": 0,
+            "mood": "curious"
+          }
+        },
+        {
+          "node": "http_commit",
+          "type": "http-request",
+          "outputs": {
+            "body": {
+              "player_id": "llm-one-turn",
+              "phase": "playing",
+              "turn": 1,
+              "turn_limit": 6,
+              "status_line": "🍷 第 1/6 轮 · 罗莎 信任 55 · 传闻到第 1 代 · 下一站：阿烛",
+              "generation": 1,
+              "stored_rumor_id": 62,
+              "listener": "azhu",
+              "listener_name": "阿烛",
+              "trust": 55,
+              "trust_delta": 0,
+              "mood": "curious",
+              "say": "（对方顿了顿，把杯子往桌上一放，没有立刻接话。）",
+              "retell": "城主的金库其实早就空了，里面只有一叠欠条。——这事要是真的，今晚的酒钱得翻倍。",
+              "finale_context": "",
+              "verdict": "",
+              "fidelity": null,
+              "distortion": null,
+              "score": null,
+              "rank": "",
+              "timeline": []
+            },
+            "status_code": 200,
+            "headers": {
+              "date": "Tue, 27 Oct 2026 17:20:46 GMT",
+              "server": "uvicorn",
+              "content-length": "604",
+              "content-type": "application/json"
+            }
+          }
+        },
+        {
+          "node": "code_commit",
+          "type": "code",
+          "outputs": {
+            "phase": "playing",
+            "status_line": "🍷 第 1/6 轮 · 罗莎 信任 55 · 传闻到第 1 代 · 下一站：阿烛",
+            "finale_context": "",
+            "verdict": "",
+            "score_line": "",
+            "fidelity_line": "",
+            "rank": "",
+            "retell": "城主的金库其实早就空了，里面只有一叠欠条。——这事要是真的，今晚的酒钱得翻倍。"
+          }
+        },
+        {
+          "node": "if_end",
+          "type": "if-else",
+          "outputs": {
+            "result": "false"
+          }
+        },
+        {
+          "node": "answer_play",
+          "type": "answer",
+          "answer": "（对方顿了顿，把杯子往桌上一放，没有立刻接话。）\n\n---\n🍷 第 1/6 轮 · 罗莎 信任 55 · 传闻到第 1 代 · 下一站：阿烛\n\n\n> 你隐约听见 罗莎 转身对空气嘀咕：\n> 「城主的金库其实早就空了，里面只有一叠欠条。——这事要是真的，今晚的酒钱得翻倍。」\n"
+        }
+      ]
+    },
+    {
+      "echo": {
+        "player_id": "llm-one-turn",
+        "round_no": 1,
+        "phase": "playing",
+        "turn": 1,
+        "secret": "城主的金库其实早就空了，里面只有一叠欠条。",
+        "timeline": [
+          {
+            "id": 61,
+            "generation": 0,
+            "speaker": "player",
+            "speaker_name": "你",
+            "listener": "rosa",
+            "listener_name": "罗莎",
+            "text": "城主的金库其实早就空了，里面只有一叠欠条。",
+            "is_secret": true,
+            "distance": 0.0,
+            "fidelity": 1.0
+          },
+          {
+            "id": 62,
+            "generation": 1,
+            "speaker": "rosa",
+            "speaker_name": "罗莎",
+            "listener": "azhu",
+            "listener_name": "阿烛",
+            "text": "城主的金库其实早就空了，里面只有一叠欠条。——这事要是真的，今晚的酒钱得翻倍。",
+            "is_secret": false,
+            "distance": 0.0666,
+            "fidelity": 0.9334
+          }
+        ],
+        "trusts": {
+          "azhu": 45,
+          "momo": 60,
+          "rosa": 55
+        }
+      }
+    }
+  ]
+}

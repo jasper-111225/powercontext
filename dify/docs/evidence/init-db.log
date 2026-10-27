@@ -1,0 +1,8 @@
+seekdb: 127.0.0.1:2881 / echo_tavern
+embedding: http://127.0.0.1:11434/v1 / qwen3-embedding:0.6b (1024d)
+✓ 建表完成（players / npcs / npc_state / rumors / memories）
+✓ NPC 种子：阿烛(45), 老默(60), 罗莎(55)
+✓ rumors 索引：PRIMARY/BTREE, ft_rumor/FULLTEXT, idx_rumor_player/BTREE, vi_rumor/VECTOR
+✓ 向量化可用：dim=1024，样例前 3 维=[-0.022, -0.027, -0.016]
+
+下一步：bash scripts/run_backend.sh

@@ -1,0 +1,7 @@
+✓ code code_turn: ['context_text', 'npc_id', 'npc_name', 'npc_persona', 'npc_style', 'npc_title', 'round_label', 'secret_text']
+✓ code code_npc: ['mood', 'retell', 'say', 'trust_delta']
+✓ code code_commit: ['fidelity_line', 'finale_context', 'phase', 'rank', 'retell', 'score_line', 'status_line', 'verdict']
+! 提示：code code_turn 的输出 round_label 没有被引用
+! 提示：code code_commit 的输出 phase 没有被引用
+! 提示：code code_commit 的输出 rank 没有被引用
+✓ 结构检查通过：11 个节点 / 10 条边 / 26 处变量引用

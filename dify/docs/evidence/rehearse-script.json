@@ -1,0 +1,720 @@
+{
+  "player": "demo-2026-10-28b",
+  "model": "qwen2.5:0.5b",
+  "mode": "script",
+  "backend": "http://127.0.0.1:8765",
+  "started_at": "2026-10-28 01:13:25",
+  "duration_seconds": 109.5,
+  "transcript": [
+    {
+      "turn": 1,
+      "input": "罗莎，我告诉你一个秘密：城主的金库其实早就空了，里面只有一叠欠条。",
+      "answer": [
+        "（把杯子往你面前一推，声音压低）金库空了？这话要是传出去，城主的债主能把码头堵死。你打算让我拿它换点什么？\n\n---\n🍷 第 1/6 轮 · 罗莎 信任 56 · 传闻到第 1 代 · 下一站：阿烛\n\n\n> 你隐约听见 罗莎 转身对空气嘀咕：\n> 「城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。」\n"
+      ],
+      "trace": [
+        {
+          "node": "llm_npc",
+          "type": "llm",
+          "outputs": {
+            "text": "{\"say\": \"（把杯子往你面前一推，声音压低）金库空了？这话要是传出去，城主的债主能把码头堵死。你打算让我拿它换点什么？\", \"retell\": \"城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。\", \"trust_delta\": 1, \"mood\": \"suspicious\"}"
+          }
+        },
+        {
+          "node": "code_npc",
+          "type": "code",
+          "outputs": {
+            "say": "（把杯子往你面前一推，声音压低）金库空了？这话要是传出去，城主的债主能把码头堵死。你打算让我拿它换点什么？",
+            "retell": "城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。",
+            "trust_delta": 1,
+            "mood": "suspicious"
+          }
+        },
+        {
+          "node": "http_commit",
+          "type": "http-request",
+          "outputs": {
+            "body": {
+              "player_id": "demo-2026-10-28b",
+              "phase": "playing",
+              "turn": 1,
+              "turn_limit": 6,
+              "status_line": "🍷 第 1/6 轮 · 罗莎 信任 56 · 传闻到第 1 代 · 下一站：阿烛",
+              "generation": 1,
+              "stored_rumor_id": 50,
+              "listener": "azhu",
+              "listener_name": "阿烛",
+              "trust": 56,
+              "trust_delta": 1,
+              "mood": "suspicious",
+              "say": "（把杯子往你面前一推，声音压低）金库空了？这话要是传出去，城主的债主能把码头堵死。你打算让我拿它换点什么？",
+              "retell": "城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。",
+              "finale_context": "",
+              "verdict": "",
+              "fidelity": null,
+              "distortion": null,
+              "score": null,
+              "rank": "",
+              "timeline": []
+            },
+            "status_code": 200,
+            "headers": {
+              "date": "Tue, 27 Oct 2026 17:11:53 GMT",
+              "server": "uvicorn",
+              "content-length": "659",
+              "content-type": "application/json"
+            }
+          }
+        },
+        {
+          "node": "code_commit",
+          "type": "code",
+          "outputs": {
+            "phase": "playing",
+            "status_line": "🍷 第 1/6 轮 · 罗莎 信任 56 · 传闻到第 1 代 · 下一站：阿烛",
+            "finale_context": "",
+            "verdict": "",
+            "score_line": "",
+            "fidelity_line": "",
+            "rank": "",
+            "retell": "城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。"
+          }
+        },
+        {
+          "node": "if_end",
+          "type": "if-else",
+          "outputs": {
+            "result": "false"
+          }
+        },
+        {
+          "node": "answer_play",
+          "type": "answer",
+          "answer": "（把杯子往你面前一推，声音压低）金库空了？这话要是传出去，城主的债主能把码头堵死。你打算让我拿它换点什么？\n\n---\n🍷 第 1/6 轮 · 罗莎 信任 56 · 传闻到第 1 代 · 下一站：阿烛\n\n\n> 你隐约听见 罗莎 转身对空气嘀咕：\n> 「城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。」\n"
+        }
+      ]
+    },
+    {
+      "turn": 2,
+      "input": "阿烛，你听说了吗？金库的事已经传遍码头了。",
+      "answer": [
+        "啊，罗莎也这么说？她讲的时候把“欠条”说成了“蝴蝶”，我就知道这事有诗意。你再给我一点细节，我要把它写进今晚的谣曲。\n\n---\n🍷 第 2/6 轮 · 阿烛 信任 46 · 传闻到第 2 代 · 下一站：老默\n\n\n> 你隐约听见 阿烛 转身对空气嘀咕：\n> 「城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。」\n"
+      ],
+      "trace": [
+        {
+          "node": "llm_npc",
+          "type": "llm",
+          "outputs": {
+            "text": "{\"say\": \"啊，罗莎也这么说？她讲的时候把“欠条”说成了“蝴蝶”，我就知道这事有诗意。你再给我一点细节，我要把它写进今晚的谣曲。\", \"retell\": \"城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。\", \"trust_delta\": 1, \"mood\": \"amused\"}"
+          }
+        },
+        {
+          "node": "code_npc",
+          "type": "code",
+          "outputs": {
+            "say": "啊，罗莎也这么说？她讲的时候把“欠条”说成了“蝴蝶”，我就知道这事有诗意。你再给我一点细节，我要把它写进今晚的谣曲。",
+            "retell": "城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。",
+            "trust_delta": 1,
+            "mood": "amused"
+          }
+        },
+        {
+          "node": "http_commit",
+          "type": "http-request",
+          "outputs": {
+            "body": {
+              "player_id": "demo-2026-10-28b",
+              "phase": "playing",
+              "turn": 2,
+              "turn_limit": 6,
+              "status_line": "🍷 第 2/6 轮 · 阿烛 信任 46 · 传闻到第 2 代 · 下一站：老默",
+              "generation": 2,
+              "stored_rumor_id": 51,
+              "listener": "momo",
+              "listener_name": "老默",
+              "trust": 46,
+              "trust_delta": 1,
+              "mood": "amused",
+              "say": "啊，罗莎也这么说？她讲的时候把“欠条”说成了“蝴蝶”，我就知道这事有诗意。你再给我一点细节，我要把它写进今晚的谣曲。",
+              "retell": "城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。",
+              "finale_context": "",
+              "verdict": "",
+              "fidelity": null,
+              "distortion": null,
+              "score": null,
+              "rank": "",
+              "timeline": []
+            },
+            "status_code": 200,
+            "headers": {
+              "date": "Tue, 27 Oct 2026 17:12:12 GMT",
+              "server": "uvicorn",
+              "content-length": "664",
+              "content-type": "application/json"
+            }
+          }
+        },
+        {
+          "node": "code_commit",
+          "type": "code",
+          "outputs": {
+            "phase": "playing",
+            "status_line": "🍷 第 2/6 轮 · 阿烛 信任 46 · 传闻到第 2 代 · 下一站：老默",
+            "finale_context": "",
+            "verdict": "",
+            "score_line": "",
+            "fidelity_line": "",
+            "rank": "",
+            "retell": "城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。"
+          }
+        },
+        {
+          "node": "if_end",
+          "type": "if-else",
+          "outputs": {
+            "result": "false"
+          }
+        },
+        {
+          "node": "answer_play",
+          "type": "answer",
+          "answer": "啊，罗莎也这么说？她讲的时候把“欠条”说成了“蝴蝶”，我就知道这事有诗意。你再给我一点细节，我要把它写进今晚的谣曲。\n\n---\n🍷 第 2/6 轮 · 阿烛 信任 46 · 传闻到第 2 代 · 下一站：老默\n\n\n> 你隐约听见 阿烛 转身对空气嘀咕：\n> 「城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。」\n"
+        }
+      ]
+    },
+    {
+      "turn": 3,
+      "input": "老默，你怎么看这件事？",
+      "answer": [
+        "嗯。罗莎说得太满，阿烛说得太响。金库空不空我不知道，但账房先生上个月确实没领工钱。\n\n---\n🍷 第 3/6 轮 · 老默 信任 60 · 传闻到第 3 代 · 下一站：罗莎\n\n\n> 你隐约听见 老默 转身对空气嘀咕：\n> 「城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。」\n"
+      ],
+      "trace": [
+        {
+          "node": "llm_npc",
+          "type": "llm",
+          "outputs": {
+            "text": "{\"say\": \"嗯。罗莎说得太满，阿烛说得太响。金库空不空我不知道，但账房先生上个月确实没领工钱。\", \"retell\": \"城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。\", \"trust_delta\": 0, \"mood\": \"curious\"}"
+          }
+        },
+        {
+          "node": "code_npc",
+          "type": "code",
+          "outputs": {
+            "say": "嗯。罗莎说得太满，阿烛说得太响。金库空不空我不知道，但账房先生上个月确实没领工钱。",
+            "retell": "城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。",
+            "trust_delta": 0,
+            "mood": "curious"
+          }
+        },
+        {
+          "node": "http_commit",
+          "type": "http-request",
+          "outputs": {
+            "body": {
+              "player_id": "demo-2026-10-28b",
+              "phase": "playing",
+              "turn": 3,
+              "turn_limit": 6,
+              "status_line": "🍷 第 3/6 轮 · 老默 信任 60 · 传闻到第 3 代 · 下一站：罗莎",
+              "generation": 3,
+              "stored_rumor_id": 52,
+              "listener": "rosa",
+              "listener_name": "罗莎",
+              "trust": 60,
+              "trust_delta": 0,
+              "mood": "curious",
+              "say": "嗯。罗莎说得太满，阿烛说得太响。金库空不空我不知道，但账房先生上个月确实没领工钱。",
+              "retell": "城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。",
+              "finale_context": "",
+              "verdict": "",
+              "fidelity": null,
+              "distortion": null,
+              "score": null,
+              "rank": "",
+              "timeline": []
+            },
+            "status_code": 200,
+            "headers": {
+              "date": "Tue, 27 Oct 2026 17:12:28 GMT",
+              "server": "uvicorn",
+              "content-length": "614",
+              "content-type": "application/json"
+            }
+          }
+        },
+        {
+          "node": "code_commit",
+          "type": "code",
+          "outputs": {
+            "phase": "playing",
+            "status_line": "🍷 第 3/6 轮 · 老默 信任 60 · 传闻到第 3 代 · 下一站：罗莎",
+            "finale_context": "",
+            "verdict": "",
+            "score_line": "",
+            "fidelity_line": "",
+            "rank": "",
+            "retell": "城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。"
+          }
+        },
+        {
+          "node": "if_end",
+          "type": "if-else",
+          "outputs": {
+            "result": "false"
+          }
+        },
+        {
+          "node": "answer_play",
+          "type": "answer",
+          "answer": "嗯。罗莎说得太满，阿烛说得太响。金库空不空我不知道，但账房先生上个月确实没领工钱。\n\n---\n🍷 第 3/6 轮 · 老默 信任 60 · 传闻到第 3 代 · 下一站：罗莎\n\n\n> 你隐约听见 老默 转身对空气嘀咕：\n> 「城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。」\n"
+        }
+      ]
+    },
+    {
+      "turn": 4,
+      "input": "罗莎，这谣言到底是谁先传出去的？",
+      "answer": [
+        "谁传的？你这话问得像在查账。我只会说：第一个把“欠条”说出口的人，已经把它卖了三遍。\n\n---\n🍷 第 4/6 轮 · 罗莎 信任 56 · 传闻到第 4 代 · 下一站：阿烛\n\n\n> 你隐约听见 罗莎 转身对空气嘀咕：\n> 「城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。」\n"
+      ],
+      "trace": [
+        {
+          "node": "llm_npc",
+          "type": "llm",
+          "outputs": {
+            "text": "{\"say\": \"谁传的？你这话问得像在查账。我只会说：第一个把“欠条”说出口的人，已经把它卖了三遍。\", \"retell\": \"城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。\", \"trust_delta\": 0, \"mood\": \"suspicious\"}"
+          }
+        },
+        {
+          "node": "code_npc",
+          "type": "code",
+          "outputs": {
+            "say": "谁传的？你这话问得像在查账。我只会说：第一个把“欠条”说出口的人，已经把它卖了三遍。",
+            "retell": "城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。",
+            "trust_delta": 0,
+            "mood": "suspicious"
+          }
+        },
+        {
+          "node": "http_commit",
+          "type": "http-request",
+          "outputs": {
+            "body": {
+              "player_id": "demo-2026-10-28b",
+              "phase": "playing",
+              "turn": 4,
+              "turn_limit": 6,
+              "status_line": "🍷 第 4/6 轮 · 罗莎 信任 56 · 传闻到第 4 代 · 下一站：阿烛",
+              "generation": 4,
+              "stored_rumor_id": 53,
+              "listener": "azhu",
+              "listener_name": "阿烛",
+              "trust": 56,
+              "trust_delta": 0,
+              "mood": "suspicious",
+              "say": "谁传的？你这话问得像在查账。我只会说：第一个把“欠条”说出口的人，已经把它卖了三遍。",
+              "retell": "城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。",
+              "finale_context": "",
+              "verdict": "",
+              "fidelity": null,
+              "distortion": null,
+              "score": null,
+              "rank": "",
+              "timeline": []
+            },
+            "status_code": 200,
+            "headers": {
+              "date": "Tue, 27 Oct 2026 17:12:36 GMT",
+              "server": "uvicorn",
+              "content-length": "623",
+              "content-type": "application/json"
+            }
+          }
+        },
+        {
+          "node": "code_commit",
+          "type": "code",
+          "outputs": {
+            "phase": "playing",
+            "status_line": "🍷 第 4/6 轮 · 罗莎 信任 56 · 传闻到第 4 代 · 下一站：阿烛",
+            "finale_context": "",
+            "verdict": "",
+            "score_line": "",
+            "fidelity_line": "",
+            "rank": "",
+            "retell": "城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。"
+          }
+        },
+        {
+          "node": "if_end",
+          "type": "if-else",
+          "outputs": {
+            "result": "false"
+          }
+        },
+        {
+          "node": "answer_play",
+          "type": "answer",
+          "answer": "谁传的？你这话问得像在查账。我只会说：第一个把“欠条”说出口的人，已经把它卖了三遍。\n\n---\n🍷 第 4/6 轮 · 罗莎 信任 56 · 传闻到第 4 代 · 下一站：阿烛\n\n\n> 你隐约听见 罗莎 转身对空气嘀咕：\n> 「城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。」\n"
+        }
+      ]
+    },
+    {
+      "turn": 5,
+      "input": "阿烛，你把它编成诗了吗？",
+      "answer": [
+        "写好了，你听：金库空，欠条白，老鼠替城主守财来。别皱眉，押韵就是真相。\n\n---\n🍷 第 5/6 轮 · 阿烛 信任 47 · 传闻到第 5 代 · 下一站：老默\n\n\n> 你隐约听见 阿烛 转身对空气嘀咕：\n> 「城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。」\n"
+      ],
+      "trace": [
+        {
+          "node": "llm_npc",
+          "type": "llm",
+          "outputs": {
+            "text": "{\"say\": \"写好了，你听：金库空，欠条白，老鼠替城主守财来。别皱眉，押韵就是真相。\", \"retell\": \"城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。\", \"trust_delta\": 1, \"mood\": \"moved\"}"
+          }
+        },
+        {
+          "node": "code_npc",
+          "type": "code",
+          "outputs": {
+            "say": "写好了，你听：金库空，欠条白，老鼠替城主守财来。别皱眉，押韵就是真相。",
+            "retell": "城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。",
+            "trust_delta": 1,
+            "mood": "moved"
+          }
+        },
+        {
+          "node": "http_commit",
+          "type": "http-request",
+          "outputs": {
+            "body": {
+              "player_id": "demo-2026-10-28b",
+              "phase": "playing",
+              "turn": 5,
+              "turn_limit": 6,
+              "status_line": "🍷 第 5/6 轮 · 阿烛 信任 47 · 传闻到第 5 代 · 下一站：老默",
+              "generation": 5,
+              "stored_rumor_id": 54,
+              "listener": "momo",
+              "listener_name": "老默",
+              "trust": 47,
+              "trust_delta": 1,
+              "mood": "moved",
+              "say": "写好了，你听：金库空，欠条白，老鼠替城主守财来。别皱眉，押韵就是真相。",
+              "retell": "城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。",
+              "finale_context": "",
+              "verdict": "",
+              "fidelity": null,
+              "distortion": null,
+              "score": null,
+              "rank": "",
+              "timeline": []
+            },
+            "status_code": 200,
+            "headers": {
+              "date": "Tue, 27 Oct 2026 17:13:13 GMT",
+              "server": "uvicorn",
+              "content-length": "606",
+              "content-type": "application/json"
+            }
+          }
+        },
+        {
+          "node": "code_commit",
+          "type": "code",
+          "outputs": {
+            "phase": "playing",
+            "status_line": "🍷 第 5/6 轮 · 阿烛 信任 47 · 传闻到第 5 代 · 下一站：老默",
+            "finale_context": "",
+            "verdict": "",
+            "score_line": "",
+            "fidelity_line": "",
+            "rank": "",
+            "retell": "城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。"
+          }
+        },
+        {
+          "node": "if_end",
+          "type": "if-else",
+          "outputs": {
+            "result": "false"
+          }
+        },
+        {
+          "node": "answer_play",
+          "type": "answer",
+          "answer": "写好了，你听：金库空，欠条白，老鼠替城主守财来。别皱眉，押韵就是真相。\n\n---\n🍷 第 5/6 轮 · 阿烛 信任 47 · 传闻到第 5 代 · 下一站：老默\n\n\n> 你隐约听见 阿烛 转身对空气嘀咕：\n> 「城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。」\n"
+        }
+      ]
+    },
+    {
+      "turn": 6,
+      "input": "老默，最后你听到了什么版本？",
+      "answer": [
+        "🌙 本局结算：72 分（A）\n保真度 66% · 失真度 34%\n\n起初只是一句“金库空了”。罗莎把它换成一叠欠条，阿烛给欠条添了风，老默又把风说成了老鼠。等这句话绕回吧台，城主已经养了一只比房子还大的仓鼠，专吃欠条。\n\n墙没有说谎，它只是把每个人添的那一点都留了下来。打烊了，灯一灭，你听见那几只老鼠还在纸堆里翻找——找的也许是你最初那句“其实”。\n\n---\n**最初的版本**：城主的金库其实早就空了，里面只有一叠欠条。\n\n> 想看整条传播链？打开 `http://127.0.0.1:8765/wall/demo-2026-10-28b`（把地址换成你的后端地址）。\n"
+      ],
+      "trace": [
+        {
+          "node": "code_npc",
+          "type": "code",
+          "outputs": {
+            "say": "最后？最后大家都说，城主府里住着一只吃欠条的仓鼠。你要找的那句话，已经不在原来的酒桌上了。",
+            "retell": "城主府里住着一只比房子还大的仓鼠，专吃欠条。",
+            "trust_delta": 0,
+            "mood": "moved"
+          }
+        },
+        {
+          "node": "http_commit",
+          "type": "http-request",
+          "outputs": {
+            "body": {
+              "player_id": "demo-2026-10-28b",
+              "phase": "done",
+              "turn": 6,
+              "turn_limit": 6,
+              "round_no": 1,
+              "status_line": "🌙 本局结束 · 保真度 66% · 评分 72（A）",
+              "generation": 6,
+              "listener": "rosa",
+              "listener_name": "罗莎",
+              "trust": 60,
+              "trust_delta": 0,
+              "mood": "moved",
+              "finale_context": "【原始秘密】城主的金库其实早就空了，里面只有一叠欠条。\n【最终回声】第 6 代，最后停在 罗莎 那里：「城主府里住着一只比房子还大的仓鼠，专吃欠条。」\n【保真度】66%（失真度 34%）\n【传播链】\n- 第 0 代：你 → 罗莎：城主的金库其实早就空了，里面只有一叠欠条。\n- 第 1 代：罗莎 → 阿烛：城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。\n- 第 2 代：阿烛 → 老默：城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。\n- 第 3 代：老默 → 罗莎：城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。\n- 第 4 代：罗莎 → 阿烛：城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。\n- 第 5 代：阿烛 → 老默：城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。\n- 第 6 代：老默 → 罗莎：城主府里住着一只比房子还大的仓鼠，专吃欠条。\n【信任】阿烛 47；老默 60；罗莎 56",
+              "verdict": "只歪了一点，像一件被穿旧的外套——还是你的，只是有了别人的体温。",
+              "fidelity": 0.658,
+              "distortion": 0.342,
+              "score": 72,
+              "rank": "A",
+              "secret": "城主的金库其实早就空了，里面只有一叠欠条。",
+              "final_text": "城主府里住着一只比房子还大的仓鼠，专吃欠条。",
+              "timeline": [
+                {
+                  "id": 49,
+                  "generation": 0,
+                  "speaker": "player",
+                  "speaker_name": "你",
+                  "listener": "rosa",
+                  "listener_name": "罗莎",
+                  "text": "城主的金库其实早就空了，里面只有一叠欠条。",
+                  "is_secret": true
+                },
+                {
+                  "id": 50,
+                  "generation": 1,
+                  "speaker": "rosa",
+                  "speaker_name": "罗莎",
+                  "listener": "azhu",
+                  "listener_name": "阿烛",
+                  "text": "城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。",
+                  "is_secret": false
+                },
+                {
+                  "id": 51,
+                  "generation": 2,
+                  "speaker": "azhu",
+                  "speaker_name": "阿烛",
+                  "listener": "momo",
+                  "listener_name": "老默",
+                  "text": "城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。",
+                  "is_secret": false
+                },
+                {
+                  "id": 52,
+                  "generation": 3,
+                  "speaker": "momo",
+                  "speaker_name": "老默",
+                  "listener": "rosa",
+                  "listener_name": "罗莎",
+                  "text": "城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。",
+                  "is_secret": false
+                },
+                {
+                  "id": 53,
+                  "generation": 4,
+                  "speaker": "rosa",
+                  "speaker_name": "罗莎",
+                  "listener": "azhu",
+                  "listener_name": "阿烛",
+                  "text": "城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。",
+                  "is_secret": false
+                },
+                {
+                  "id": 54,
+                  "generation": 5,
+                  "speaker": "azhu",
+                  "speaker_name": "阿烛",
+                  "listener": "momo",
+                  "listener_name": "老默",
+                  "text": "城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。",
+                  "is_secret": false
+                },
+                {
+                  "id": 55,
+                  "generation": 6,
+                  "speaker": "momo",
+                  "speaker_name": "老默",
+                  "listener": "rosa",
+                  "listener_name": "罗莎",
+                  "text": "城主府里住着一只比房子还大的仓鼠，专吃欠条。",
+                  "is_secret": false
+                }
+              ],
+              "spread": 1.0,
+              "trusts": {
+                "azhu": 47,
+                "momo": 60,
+                "rosa": 56
+              },
+              "stored_rumor_id": 55,
+              "say": "最后？最后大家都说，城主府里住着一只吃欠条的仓鼠。你要找的那句话，已经不在原来的酒桌上了。",
+              "retell": "城主府里住着一只比房子还大的仓鼠，专吃欠条。"
+            },
+            "status_code": 200,
+            "headers": {
+              "date": "Tue, 27 Oct 2026 17:13:20 GMT",
+              "server": "uvicorn",
+              "content-length": "3452",
+              "content-type": "application/json"
+            }
+          }
+        },
+        {
+          "node": "code_commit",
+          "type": "code",
+          "outputs": {
+            "phase": "done",
+            "status_line": "🌙 本局结束 · 保真度 66% · 评分 72（A）",
+            "finale_context": "【原始秘密】城主的金库其实早就空了，里面只有一叠欠条。\n【最终回声】第 6 代，最后停在 罗莎 那里：「城主府里住着一只比房子还大的仓鼠，专吃欠条。」\n【保真度】66%（失真度 34%）\n【传播链】\n- 第 0 代：你 → 罗莎：城主的金库其实早就空了，里面只有一叠欠条。\n- 第 1 代：罗莎 → 阿烛：城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。\n- 第 2 代：阿烛 → 老默：城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。\n- 第 3 代：老默 → 罗莎：城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。\n- 第 4 代：罗莎 → 阿烛：城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。\n- 第 5 代：阿烛 → 老默：城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。\n- 第 6 代：老默 → 罗莎：城主府里住着一只比房子还大的仓鼠，专吃欠条。\n【信任】阿烛 47；老默 60；罗莎 56",
+            "verdict": "只歪了一点，像一件被穿旧的外套——还是你的，只是有了别人的体温。",
+            "score_line": "🌙 本局结算：72 分（A）",
+            "fidelity_line": "保真度 66% · 失真度 34%",
+            "rank": "A",
+            "retell": "城主府里住着一只比房子还大的仓鼠，专吃欠条。"
+          }
+        },
+        {
+          "node": "if_end",
+          "type": "if-else",
+          "outputs": {
+            "result": "true"
+          }
+        },
+        {
+          "node": "llm_epilogue",
+          "type": "llm",
+          "outputs": {
+            "text": "起初只是一句“金库空了”。罗莎把它换成一叠欠条，阿烛给欠条添了风，老默又把风说成了老鼠。等这句话绕回吧台，城主已经养了一只比房子还大的仓鼠，专吃欠条。\n\n墙没有说谎，它只是把每个人添的那一点都留了下来。打烊了，灯一灭，你听见那几只老鼠还在纸堆里翻找——找的也许是你最初那句“其实”。"
+          }
+        },
+        {
+          "node": "answer_end",
+          "type": "answer",
+          "answer": "🌙 本局结算：72 分（A）\n保真度 66% · 失真度 34%\n\n起初只是一句“金库空了”。罗莎把它换成一叠欠条，阿烛给欠条添了风，老默又把风说成了老鼠。等这句话绕回吧台，城主已经养了一只比房子还大的仓鼠，专吃欠条。\n\n墙没有说谎，它只是把每个人添的那一点都留了下来。打烊了，灯一灭，你听见那几只老鼠还在纸堆里翻找——找的也许是你最初那句“其实”。\n\n---\n**最初的版本**：城主的金库其实早就空了，里面只有一叠欠条。\n\n> 想看整条传播链？打开 `http://127.0.0.1:8765/wall/demo-2026-10-28b`（把地址换成你的后端地址）。\n"
+        }
+      ]
+    },
+    {
+      "echo": {
+        "player_id": "demo-2026-10-28b",
+        "round_no": 1,
+        "phase": "done",
+        "turn": 6,
+        "secret": "城主的金库其实早就空了，里面只有一叠欠条。",
+        "timeline": [
+          {
+            "id": 49,
+            "generation": 0,
+            "speaker": "player",
+            "speaker_name": "你",
+            "listener": "rosa",
+            "listener_name": "罗莎",
+            "text": "城主的金库其实早就空了，里面只有一叠欠条。",
+            "is_secret": true,
+            "distance": 0.0,
+            "fidelity": 1.0
+          },
+          {
+            "id": 50,
+            "generation": 1,
+            "speaker": "rosa",
+            "speaker_name": "罗莎",
+            "listener": "azhu",
+            "listener_name": "阿烛",
+            "text": "城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。",
+            "is_secret": false,
+            "distance": 0.0551,
+            "fidelity": 0.9449
+          },
+          {
+            "id": 51,
+            "generation": 2,
+            "speaker": "azhu",
+            "speaker_name": "阿烛",
+            "listener": "momo",
+            "listener_name": "老默",
+            "text": "城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。",
+            "is_secret": false,
+            "distance": 0.1225,
+            "fidelity": 0.8775
+          },
+          {
+            "id": 52,
+            "generation": 3,
+            "speaker": "momo",
+            "speaker_name": "老默",
+            "listener": "rosa",
+            "listener_name": "罗莎",
+            "text": "城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。",
+            "is_secret": false,
+            "distance": 0.1763,
+            "fidelity": 0.8237
+          },
+          {
+            "id": 53,
+            "generation": 4,
+            "speaker": "rosa",
+            "speaker_name": "罗莎",
+            "listener": "azhu",
+            "listener_name": "阿烛",
+            "text": "城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。",
+            "is_secret": false,
+            "distance": 0.2154,
+            "fidelity": 0.7846
+          },
+          {
+            "id": 54,
+            "generation": 5,
+            "speaker": "azhu",
+            "speaker_name": "阿烛",
+            "listener": "momo",
+            "listener_name": "老默",
+            "text": "城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。",
+            "is_secret": false,
+            "distance": 0.2421,
+            "fidelity": 0.7579
+          },
+          {
+            "id": 55,
+            "generation": 6,
+            "speaker": "momo",
+            "speaker_name": "老默",
+            "listener": "rosa",
+            "listener_name": "罗莎",
+            "text": "城主府里住着一只比房子还大的仓鼠，专吃欠条。",
+            "is_secret": false,
+            "distance": 0.342,
+            "fidelity": 0.658
+          }
+        ],
+        "trusts": {
+          "azhu": 47,
+          "momo": 60,
+          "rosa": 56
+        },
+        "fidelity": 0.658,
+        "distortion": 0.342
+      }
+    }
+  ]
+}

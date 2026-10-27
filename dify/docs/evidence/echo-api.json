@@ -1,0 +1,100 @@
+{
+  "player_id": "demo-2026-10-28b",
+  "round_no": 1,
+  "phase": "done",
+  "turn": 6,
+  "secret": "城主的金库其实早就空了，里面只有一叠欠条。",
+  "timeline": [
+    {
+      "id": 49,
+      "generation": 0,
+      "speaker": "player",
+      "speaker_name": "你",
+      "listener": "rosa",
+      "listener_name": "罗莎",
+      "text": "城主的金库其实早就空了，里面只有一叠欠条。",
+      "is_secret": true,
+      "distance": 0.0,
+      "fidelity": 1.0
+    },
+    {
+      "id": 50,
+      "generation": 1,
+      "speaker": "rosa",
+      "speaker_name": "罗莎",
+      "listener": "azhu",
+      "listener_name": "阿烛",
+      "text": "城主那个金库早就空了，只剩一叠欠条，连老鼠都懒得去。",
+      "is_secret": false,
+      "distance": 0.0551,
+      "fidelity": 0.9449
+    },
+    {
+      "id": 51,
+      "generation": 2,
+      "speaker": "azhu",
+      "speaker_name": "阿烛",
+      "listener": "momo",
+      "listener_name": "老默",
+      "text": "城主的金库空得能跑老鼠，欠条堆成山，风一吹像雪。",
+      "is_secret": false,
+      "distance": 0.1225,
+      "fidelity": 0.8775
+    },
+    {
+      "id": 52,
+      "generation": 3,
+      "speaker": "momo",
+      "speaker_name": "老默",
+      "listener": "rosa",
+      "listener_name": "罗莎",
+      "text": "城主拿欠条当钱花，金库里只剩老鼠，账房先生跑了。",
+      "is_secret": false,
+      "distance": 0.1763,
+      "fidelity": 0.8237
+    },
+    {
+      "id": 53,
+      "generation": 4,
+      "speaker": "rosa",
+      "speaker_name": "罗莎",
+      "listener": "azhu",
+      "listener_name": "阿烛",
+      "text": "城主拿欠条当钱花，金库里养老鼠，账房先生连夜跑了。",
+      "is_secret": false,
+      "distance": 0.2154,
+      "fidelity": 0.7846
+    },
+    {
+      "id": 54,
+      "generation": 5,
+      "speaker": "azhu",
+      "speaker_name": "阿烛",
+      "listener": "momo",
+      "listener_name": "老默",
+      "text": "城主把国库换成一窝仓鼠，仓鼠啃着欠条，账房先生连夜逃走。",
+      "is_secret": false,
+      "distance": 0.2421,
+      "fidelity": 0.7579
+    },
+    {
+      "id": 55,
+      "generation": 6,
+      "speaker": "momo",
+      "speaker_name": "老默",
+      "listener": "rosa",
+      "listener_name": "罗莎",
+      "text": "城主府里住着一只比房子还大的仓鼠，专吃欠条。",
+      "is_secret": false,
+      "distance": 0.342,
+      "fidelity": 0.658
+    }
+  ],
+  "trusts": {
+    "azhu": 47,
+    "momo": 60,
+    "rosa": 56
+  },
+  "fidelity": 0.658,
+  "distortion": 0.342
+}

@@ -1,0 +1,80 @@
+INFO:     Started server process [3]
+INFO:     Waiting for application startup.
+2026-10-28 01:06:38,911 INFO echo.api seekdb schema ready: 127.0.0.1:2881/echo_tavern
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
+2026-10-28 01:06:54,018 INFO echo.game turn {"player_id": "demo-2026-10-28", "round_no": 1, "npc": "rosa", "first_secret": true, "retrieval": []}
+INFO:     127.0.0.1:56046 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56046 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:07:07,529 INFO echo.game turn {"player_id": "demo-2026-10-28", "round_no": 1, "npc": "azhu", "first_secret": false, "retrieval": []}
+INFO:     127.0.0.1:56046 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56046 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:07:23,838 INFO echo.game turn {"player_id": "demo-2026-10-28", "round_no": 1, "npc": "momo", "first_secret": false, "retrieval": []}
+INFO:     127.0.0.1:56046 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56046 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:07:39,799 INFO echo.game turn {"player_id": "demo-2026-10-28", "round_no": 1, "npc": "rosa", "first_secret": false, "retrieval": [{"id": 62, "via": "vector+fulltext", "rrf": 0.03306, "text": "城主的金库其实早就空了，里面只有一叠欠条。"}, {"id": 63, "via": "vector+fulltext", "rrf": 0.03306, "text": "（把杯子往你面前一推，声音压低）金库空了？这话要是传出去，城主的债主能把码头堵死"}]}
+INFO:     127.0.0.1:56046 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56046 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:07:59,490 INFO echo.game turn {"player_id": "demo-2026-10-28", "round_no": 1, "npc": "azhu", "first_secret": false, "retrieval": [{"id": 64, "via": "vector+fulltext", "rrf": 0.033333, "text": "你听说了吗？金库的事已经传遍码头了。"}, {"id": 65, "via": "vector+fulltext", "rrf": 0.032787, "text": "啊，罗莎也这么说？她讲的时候把“欠条”说成了“蝴蝶”，我就知道这事有诗意。你再给"}]}
+INFO:     127.0.0.1:56046 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56046 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:08:04,715 INFO echo.game turn {"player_id": "demo-2026-10-28", "round_no": 1, "npc": "momo", "first_secret": false, "retrieval": [{"id": 66, "via": "vector+fulltext", "rrf": 0.033333, "text": "你怎么看这件事？"}, {"id": 67, "via": "vector", "rrf": 0.016393, "text": "嗯。罗莎说得太满，阿烛说得太响。金库空不空我不知道，但账房先生上个月确实没领工钱"}]}
+INFO:     127.0.0.1:56046 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56046 - "POST /api/v1/commit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48072 - "GET /api/v1/echo/demo-2026-10-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45608 - "GET /api/v1/echo/demo-2026-10-28 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45616 - "GET /api/v1/echo/demo-2026-10-28 HTTP/1.1" 200 OK
+2026-10-28 01:11:54,196 INFO echo.game turn {"player_id": "demo-2026-10-28b", "round_no": 1, "npc": "rosa", "first_secret": true, "retrieval": []}
+INFO:     127.0.0.1:58064 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58064 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:12:13,069 INFO echo.game turn {"player_id": "demo-2026-10-28b", "round_no": 1, "npc": "azhu", "first_secret": false, "retrieval": []}
+INFO:     127.0.0.1:58064 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58064 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:12:28,120 INFO echo.game turn {"player_id": "demo-2026-10-28b", "round_no": 1, "npc": "momo", "first_secret": false, "retrieval": []}
+INFO:     127.0.0.1:58064 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58064 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:12:36,688 INFO echo.game turn {"player_id": "demo-2026-10-28b", "round_no": 1, "npc": "rosa", "first_secret": false, "retrieval": [{"id": 74, "via": "vector+fulltext", "rrf": 0.03306, "text": "城主的金库其实早就空了，里面只有一叠欠条。"}, {"id": 75, "via": "vector+fulltext", "rrf": 0.03306, "text": "（把杯子往你面前一推，声音压低）金库空了？这话要是传出去，城主的债主能把码头堵死"}]}
+INFO:     127.0.0.1:58064 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58064 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:13:13,778 INFO echo.game turn {"player_id": "demo-2026-10-28b", "round_no": 1, "npc": "azhu", "first_secret": false, "retrieval": [{"id": 76, "via": "vector+fulltext", "rrf": 0.033333, "text": "你听说了吗？金库的事已经传遍码头了。"}, {"id": 77, "via": "vector+fulltext", "rrf": 0.032787, "text": "啊，罗莎也这么说？她讲的时候把“欠条”说成了“蝴蝶”，我就知道这事有诗意。你再给"}]}
+INFO:     127.0.0.1:58064 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58064 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:13:20,932 INFO echo.game turn {"player_id": "demo-2026-10-28b", "round_no": 1, "npc": "momo", "first_secret": false, "retrieval": [{"id": 78, "via": "vector+fulltext", "rrf": 0.033333, "text": "你怎么看这件事？"}, {"id": 79, "via": "vector", "rrf": 0.016393, "text": "嗯。罗莎说得太满，阿烛说得太响。金库空不空我不知道，但账房先生上个月确实没领工钱"}]}
+INFO:     127.0.0.1:58064 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58064 - "POST /api/v1/commit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53464 - "GET /api/v1/echo/demo-2026-10-28b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /wall/demo-2026-10-28b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59808 - "GET /wall/demo-2026-10-28b HTTP/1.1" 200 OK
+INFO:     Started server process [4]
+INFO:     Waiting for application startup.
+2026-10-28 01:14:13,806 INFO echo.api seekdb schema ready: 127.0.0.1:2881/echo_tavern
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8765 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51910 - "GET /wall/demo-2026-10-28b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51924 - "GET /wall/demo-2026-10-28b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41368 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41376 - "GET /api/v1/echo/demo-2026-10-28b HTTP/1.1" 200 OK
+2026-10-28 01:14:55,277 INFO echo.game turn {"player_id": "demo-llm-0.5b", "round_no": 1, "npc": "rosa", "first_secret": true, "retrieval": []}
+INFO:     127.0.0.1:59410 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59410 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:15:09,104 INFO echo.game turn {"player_id": "demo-llm-0.5b", "round_no": 1, "npc": "azhu", "first_secret": false, "retrieval": []}
+INFO:     127.0.0.1:59410 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55970 - "GET /api/v1/echo/demo-llm-0.5b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55966 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:17:35,891 INFO echo.game turn {"player_id": "demo-llm-0.5b", "round_no": 1, "npc": "momo", "first_secret": false, "retrieval": []}
+INFO:     127.0.0.1:55966 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36766 - "GET /api/v1/echo/demo-llm-0.5b HTTP/1.1" 200 OK
+2026-10-28 01:18:05,448 INFO echo.game turn {"player_id": "demo-llm-0.5b", "round_no": 1, "npc": "rosa", "first_secret": false, "retrieval": [{"id": 86, "via": "vector+fulltext", "rrf": 0.033333, "text": "城主的金库其实早就空了，里面只有一叠欠条。"}, {"id": 87, "via": "vector", "rrf": 0.016393, "text": "（对方顿了顿，把杯子往桌上一放，没有立刻接话。）"}]}
+INFO:     127.0.0.1:52278 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53322 - "GET /api/v1/echo/demo-llm-0.5b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34594 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:18:46,539 INFO echo.game turn {"player_id": "demo-llm-0.5b", "round_no": 1, "npc": "azhu", "first_secret": false, "retrieval": [{"id": 88, "via": "vector+fulltext", "rrf": 0.033333, "text": "你听说了吗？金库的事已经传遍码头了。"}, {"id": 89, "via": "vector", "rrf": 0.016393, "text": "（对方顿了顿，把杯子往桌上一放，没有立刻接话。）"}]}
+INFO:     127.0.0.1:34594 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42108 - "GET /api/v1/echo/demo-llm-0.5b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42106 - "POST /api/v1/commit HTTP/1.1" 200 OK
+2026-10-28 01:20:26,920 INFO echo.game turn {"player_id": "demo-llm-0.5b", "round_no": 1, "npc": "momo", "first_secret": false, "retrieval": [{"id": 90, "via": "vector+fulltext", "rrf": 0.033333, "text": "你怎么看这件事？"}]}
+INFO:     127.0.0.1:42106 - "POST /api/v1/turn HTTP/1.1" 200 OK
+2026-10-28 01:20:42,613 INFO echo.game turn {"player_id": "llm-one-turn", "round_no": 1, "npc": "rosa", "first_secret": true, "retrieval": []}
+INFO:     127.0.0.1:41030 - "POST /api/v1/turn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41030 - "POST /api/v1/commit HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42866 - "GET /api/v1/echo/llm-one-turn HTTP/1.1" 200 OK

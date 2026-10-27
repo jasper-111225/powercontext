@@ -1,0 +1,7 @@
+file: dsl/echo-tavern.chatflow.yml
+kind: app
+status: loadable
+reason: None
+nodes: 11
+edges: 10
+✓ Dify/graphon 认为这份 DSL 可以加载

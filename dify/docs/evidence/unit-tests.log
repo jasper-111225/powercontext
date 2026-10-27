@@ -1,0 +1,19 @@
+test_keep_plain_text (test_game.CleanMessageTest) ... ok
+test_strip_address (test_game.CleanMessageTest) ... ok
+test_strip_secret_lead (test_game.CleanMessageTest) ... ok
+test_first_secret_does_not_show_heard (test_game.ContextTest) ... ok
+test_heard_is_included_for_later_turn (test_game.ContextTest) ... ok
+test_returning_with_new_round_shows_echo (test_game.ContextTest) ... ok
+test_thresholds (test_game.RankTest) ... ok
+test_alias (test_game.ResolveNpcTest) ... ok
+test_earliest_mention_wins (test_game.ResolveNpcTest) ... ok
+test_fallback_to_last_npc (test_game.ResolveNpcTest) ... ok
+test_longest_alias_wins_when_same_position (test_game.ResolveNpcTest) ... ok
+test_empty_retell_uses_core_once (test_game.RetellTest) ... ok
+test_identical_retell_gets_style_marker (test_game.RetellTest) ... ok
+test_too_long_is_cut (test_game.RetellTest) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.002s
+
+OK

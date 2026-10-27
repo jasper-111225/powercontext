@@ -1,0 +1,25 @@
+# 可选：把回声酒馆后端也放进 Docker（默认推荐直接在宿主机跑 Python）。
+#
+# 前提：宿主机上已有 seekdb:2881 与 Ollama:11434（OLLAMA_HOST=0.0.0.0）。
+# 用法：cd dify && docker compose -f docker-compose.backend.yaml up -d --build
+services:
+  echo-backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: echo-backend
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      ECHO_DB_HOST: host.docker.internal
+      ECHO_DB_PORT: 2881
+      ECHO_DB_USER: root
+      ECHO_DB_PASSWORD: ""
+      ECHO_DB_NAME: echo_tavern
+      ECHO_EMBED_BASE_URL: http://host.docker.internal:11434/v1
+      ECHO_EMBED_API_KEY: ollama
+      ECHO_EMBED_MODEL: qwen3-embedding:0.6b
+      ECHO_EMBED_DIM: 1024

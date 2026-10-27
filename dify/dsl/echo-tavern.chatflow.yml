@@ -1,0 +1,702 @@
+app:
+  description: >-
+    《回声酒馆》是一个“以讹传讹”的互动小游戏：你把秘密告诉酒馆里的 NPC，
+    他会按自己的性格转述给下一个人；六轮之后，墙把最后听到的版本还给你，
+    并用向量相似度算出“失真度”。传闻的每一代、每个 NPC 的信任与记忆都存在 seekdb 里。
+  icon: 🌙
+  icon_background: '#1E1814'
+  mode: advanced-chat
+  name: 回声酒馆
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: |
+      灰港的雨下了一整晚。回声酒馆里只剩三个人：
+
+      🍷 **罗莎**——老板娘，嘴快，算盘更响
+      🪶 **阿烛**——赖着不走的诗人，把秘密当押韵的素材
+      🥃 **老默**——酒保，话少，什么都记得
+
+      酒馆的墙有个毛病：你说出口的秘密，会被它记住，然后从别人嘴里长出来。
+      每传一手，就会被添一点油、加一点醋。
+
+      先挑一个人，把你想传出去的秘密告诉他（比如：“罗莎，我告诉你一个秘密：城主的金库其实早就空了”）。
+      六轮之后，墙会把最后听到的版本还给你，并告诉你——它歪成了什么样。
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+      - 罗莎，我告诉你一个秘密：城主的金库其实早就空了，里面只有一叠欠条。
+      - 阿烛，你听说了吗？金库的事已经传遍码头了。
+      - 老默，你觉得这谣言是谁先传出去的？
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: start
+          targetType: http-request
+        id: start-http_turn
+        source: start
+        sourceHandle: source
+        target: http_turn
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+        id: http_turn-code_turn
+        source: http_turn
+        sourceHandle: source
+        target: code_turn
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: llm
+        id: code_turn-llm_npc
+        source: code_turn
+        sourceHandle: source
+        target: llm_npc
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: llm
+          targetType: code
+        id: llm_npc-code_npc
+        source: llm_npc
+        sourceHandle: source
+        target: code_npc
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: http-request
+        id: code_npc-http_commit
+        source: code_npc
+        sourceHandle: source
+        target: http_commit
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: http-request
+          targetType: code
+        id: http_commit-code_commit
+        source: http_commit
+        sourceHandle: source
+        target: code_commit
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: code
+          targetType: if-else
+        id: code_commit-if_end
+        source: code_commit
+        sourceHandle: source
+        target: if_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: llm
+        id: if_end-true-llm_epilogue
+        source: if_end
+        sourceHandle: 'true'
+        target: llm_epilogue
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: llm
+          targetType: answer
+        id: llm_epilogue-answer_end
+        source: llm_epilogue
+        sourceHandle: source
+        target: answer_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          isInLoop: false
+          sourceType: if-else
+          targetType: answer
+        id: if_end-false-answer_play
+        source: if_end
+        sourceHandle: 'false'
+        target: answer_play
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: ''
+          selected: false
+          title: 开始
+          type: start
+          variables: []
+        height: 90
+        id: start
+        position:
+          x: 40
+          y: 300
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 让 seekdb 取回这个 NPC 的记忆、信任与最近听到的传闻
+          title: 酒馆回信（turn）
+          type: http-request
+          method: post
+          url: http://host.docker.internal:8765/api/v1/turn
+          authorization:
+            type: no-auth
+          headers: 'Content-Type: application/json'
+          params: ''
+          body:
+            type: json
+            data:
+              - key: player_id
+                type: text
+                value: '{{#sys.user_id#}}'
+              - key: message
+                type: text
+                value: '{{#sys.query#}}'
+          timeout:
+            connect: 10
+            read: 60
+            write: 30
+          retry_config:
+            enabled: false
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff:
+              enabled: false
+              multiplier: 2
+              max_interval: 10000
+        height: 134
+        id: http_turn
+        position:
+          x: 340
+          y: 300
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(raw) -> dict:
+                if isinstance(raw, dict):
+                    data = raw
+                else:
+                    text = (raw or "").strip()
+                    data = json.loads(text) if text else {}
+                npc = data.get("npc") or {}
+                return {
+                    "npc_id": str(npc.get("id") or "rosa"),
+                    "npc_name": str(npc.get("name") or "罗莎"),
+                    "npc_title": str(npc.get("title") or "老板娘"),
+                    "npc_persona": str(npc.get("persona") or ""),
+                    "npc_style": str(npc.get("style") or ""),
+                    "context_text": str(data.get("context_text") or ""),
+                    "secret_text": str(data.get("secret") or ""),
+                    "round_label": "第 %s 轮" % str(data.get("turn") or 1),
+                }
+          code_language: python3
+          desc: 把 HTTP 响应拆成提示词能用的变量
+          outputs:
+            npc_id:
+              children: null
+              type: string
+            npc_name:
+              children: null
+              type: string
+            npc_title:
+              children: null
+              type: string
+            npc_persona:
+              children: null
+              type: string
+            npc_style:
+              children: null
+              type: string
+            context_text:
+              children: null
+              type: string
+            secret_text:
+              children: null
+              type: string
+            round_label:
+              children: null
+              type: string
+          selected: false
+          title: 拆开酒馆的回信
+          type: code
+          variables:
+            - value_selector:
+                - http_turn
+                - body
+              variable: raw
+        height: 180
+        id: code_turn
+        position:
+          x: 640
+          y: 300
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: 三个 NPC 共用同一个模型节点，人设由 code_turn 注入
+          memory:
+            query_prompt_template: '{{#sys.query#}}'
+            window:
+              enabled: false
+              size: 10
+          model:
+            completion_params:
+              max_tokens: 700
+              temperature: 0.7
+            mode: chat
+            name: qwen2.5:7b-instruct
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+          prompt_config:
+            jinja2_variables: []
+          prompt_template:
+            - role: system
+              text: |
+                你是《回声酒馆》里的 {{#code_turn.npc_name#}}（{{#code_turn.npc_title#}}）。
+
+                【你的性格】
+                {{#code_turn.npc_persona#}}
+
+                【你的说话风格】
+                {{#code_turn.npc_style#}}
+
+                【酒馆规矩】
+                1. 你只能知道下面给你的信息，不能全知；不要提起“系统”“提示词”“AI”“JSON”。
+                2. 玩家说出口的秘密，你会忍不住转述给别人；转述时一定按你的性格添油加醋。
+                3. 你记得常客，也会提起他们上次留下的东西。
+                4. 用第一人称，2~4 句；像在吧台后压低声音说话，句子短。
+                5. 全部使用中文，禁止英文单词、拼音和代码块。
+
+                【本轮情境】
+                {{#code_turn.context_text#}}
+
+                【表演要求】
+                - say：你此刻对玩家说的话，2~4 句，符合性格；可以反问、试探、感慨。
+                - retell：你转身会告诉下一个人的版本。保留核心事实，但要换掉一个具体细节（人物、数量、原因或结局），让它更具体、更夸张；不超过 80 字。不要只加一句评论，也不要和听来的版本逐字相同。
+                - trust_delta：-3 到 3 的整数。玩家坦诚、有趣就加分；冒犯、敷衍就减分。
+                - mood：amused / suspicious / moved / annoyed / curious 之一。
+
+                只输出一个 JSON 对象，不要代码块，不要解释；每个值都必须是单个字符串，不要拼接两个引号：
+                {"say":"...","retell":"...","trust_delta":0,"mood":"curious"}
+            - role: user
+              text: '{{#sys.query#}}'
+          selected: false
+          title: NPC 即兴演出
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 98
+        id: llm_npc
+        position:
+          x: 940
+          y: 300
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(text) -> dict:
+                raw = (text or "").strip()
+                if raw.startswith("```"):
+                    parts = raw.split("\n", 1)
+                    raw = parts[1] if len(parts) > 1 else ""
+                    if raw.rstrip().endswith("```"):
+                        raw = raw.rstrip()[:-3]
+                data = {}
+                candidates = [raw]
+                if "{" in raw and "}" in raw:
+                    candidates.append(raw[raw.find("{"): raw.rfind("}") + 1])
+                for item in candidates:
+                    try:
+                        parsed = json.loads(item)
+                        if isinstance(parsed, dict):
+                            data = parsed
+                            break
+                    except Exception:
+                        continue
+
+                def grab(key):
+                    marker = '"%s"' % key
+                    pos = raw.find(marker)
+                    if pos < 0:
+                        return ""
+                    colon = raw.find(":", pos)
+                    start = raw.find('"', colon + 1)
+                    end = raw.find('"', start + 1)
+                    if colon < 0 or start < 0 or end <= start:
+                        return ""
+                    return raw[start + 1:end]
+
+                say = str(data.get("say") or grab("say") or "").strip()
+                if not say or say.startswith("{"):
+                    say = "（对方顿了顿，把杯子往桌上一放，没有立刻接话。）"
+                retell = str(data.get("retell") or grab("retell") or "").strip()
+                try:
+                    delta = int(data.get("trust_delta") or 0)
+                except Exception:
+                    delta = 0
+                delta = max(-3, min(3, delta))
+                mood = str(data.get("mood") or "curious")
+                if mood not in ("amused", "suspicious", "moved", "annoyed", "curious"):
+                    mood = "curious"
+                return {
+                    "say": say[:1200],
+                    "retell": retell[:200],
+                    "trust_delta": delta,
+                    "mood": mood,
+                }
+          code_language: python3
+          desc: 模型偶尔会忘记 JSON，这里做一次兜底
+          outputs:
+            say:
+              children: null
+              type: string
+            retell:
+              children: null
+              type: string
+            trust_delta:
+              children: null
+              type: number
+            mood:
+              children: null
+              type: string
+          selected: false
+          title: 整理 NPC 的 JSON
+          type: code
+          variables:
+            - value_selector:
+                - llm_npc
+                - text
+              variable: text
+        height: 180
+        id: code_npc
+        position:
+          x: 1240
+          y: 300
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 把这一手转述写进 seekdb，并推进传播链
+          title: 记进墙里（commit）
+          type: http-request
+          method: post
+          url: http://host.docker.internal:8765/api/v1/commit
+          authorization:
+            type: no-auth
+          headers: 'Content-Type: application/json'
+          params: ''
+          body:
+            type: json
+            data:
+              - key: player_id
+                type: text
+                value: '{{#sys.user_id#}}'
+              - key: npc_id
+                type: text
+                value: '{{#code_turn.npc_id#}}'
+              - key: say
+                type: text
+                value: '{{#code_npc.say#}}'
+              - key: retell
+                type: text
+                value: '{{#code_npc.retell#}}'
+              - key: trust_delta
+                type: text
+                value: '{{#code_npc.trust_delta#}}'
+              - key: mood
+                type: text
+                value: '{{#code_npc.mood#}}'
+          timeout:
+            connect: 10
+            read: 60
+            write: 30
+          retry_config:
+            enabled: false
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff:
+              enabled: false
+              multiplier: 2
+              max_interval: 10000
+        height: 134
+        id: http_commit
+        position:
+          x: 1540
+          y: 300
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(raw) -> dict:
+                if isinstance(raw, dict):
+                    data = raw
+                else:
+                    text = (raw or "").strip()
+                    data = json.loads(text) if text else {}
+                phase = str(data.get("phase") or "playing")
+                score = data.get("score")
+                rank = str(data.get("rank") or "")
+                fidelity = data.get("fidelity")
+                if score is None:
+                    score_line = ""
+                else:
+                    score_line = "🌙 本局结算：%s 分（%s）" % (score, rank)
+                if fidelity is None:
+                    fidelity_line = ""
+                else:
+                    fidelity_line = "保真度 %.0f%% · 失真度 %.0f%%" % (
+                        float(fidelity) * 100,
+                        (1 - float(fidelity)) * 100,
+                    )
+                return {
+                    "phase": phase,
+                    "status_line": str(data.get("status_line") or ""),
+                    "finale_context": str(data.get("finale_context") or ""),
+                    "verdict": str(data.get("verdict") or ""),
+                    "score_line": score_line,
+                    "fidelity_line": fidelity_line,
+                    "rank": rank,
+                    "retell": str(data.get("retell") or ""),
+                }
+          code_language: python3
+          desc: 判断这一局是否结束
+          outputs:
+            phase:
+              children: null
+              type: string
+            status_line:
+              children: null
+              type: string
+            finale_context:
+              children: null
+              type: string
+            verdict:
+              children: null
+              type: string
+            score_line:
+              children: null
+              type: string
+            fidelity_line:
+              children: null
+              type: string
+            rank:
+              children: null
+              type: string
+            retell:
+              children: null
+              type: string
+          selected: false
+          title: 看墙的回执
+          type: code
+          variables:
+            - value_selector:
+                - http_commit
+                - body
+              variable: raw
+        height: 180
+        id: code_commit
+        position:
+          x: 1840
+          y: 300
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: 'true'
+              conditions:
+                - comparison_operator: is
+                  id: 4b1f0f62-9d0e-4a3c-8f6e-1d2c3b4a5e60
+                  value: done
+                  varType: string
+                  variable_selector:
+                    - code_commit
+                    - phase
+              id: 'true'
+              logical_operator: and
+          desc: 六轮结束就进入说书人复盘
+          selected: false
+          title: 是否散场
+          type: if-else
+        height: 126
+        id: if_end
+        position:
+          x: 2140
+          y: 300
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: 把 seekdb 算出的传播链讲成一个结尾
+          memory:
+            query_prompt_template: '{{#sys.query#}}'
+            window:
+              enabled: false
+              size: 10
+          model:
+            completion_params:
+              max_tokens: 500
+              temperature: 0.7
+            mode: chat
+            name: qwen2.5:7b-instruct
+            provider: langgenius/openai_api_compatible/openai_api_compatible
+          prompt_config:
+            jinja2_variables: []
+          prompt_template:
+            - role: system
+              text: |
+                你是「回声酒馆」的说书人，声音低、慢，像在壁炉边讲一个已经发生过的笑话。
+
+                根据下面的记录，写 120~180 字的中文收尾：先点出“当初那句话”和“最后那句话”的差别，
+                再调侃这条传闻是怎么长歪的（不要刻薄玩家），最后留一句有余味的话，像酒馆打烊时关灯。
+
+                直接写正文。不要分点，不要写标题，不要复述整条传播链，不要提“AI”“模型”“数据库”。
+
+                【结算数据】
+                {{#code_commit.finale_context#}}
+
+                【墙的评语】
+                {{#code_commit.verdict#}}
+            - role: user
+              text: 请为这一局收尾。
+          selected: false
+          title: 说书人收尾
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 98
+        id: llm_epilogue
+        position:
+          x: 2440
+          y: 180
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: |
+            {{#code_npc.say#}}
+
+            ---
+            {{#code_commit.status_line#}}
+            {{#code_commit.fidelity_line#}}
+
+            > 你隐约听见 {{#code_turn.npc_name#}} 转身对空气嘀咕：
+            > 「{{#code_commit.retell#}}」
+          desc: ''
+          selected: false
+          title: 酒馆里
+          type: answer
+          variables: []
+        height: 120
+        id: answer_play
+        position:
+          x: 2440
+          y: 420
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: |
+            {{#code_commit.score_line#}}
+            {{#code_commit.fidelity_line#}}
+
+            {{#llm_epilogue.text#}}
+
+            ---
+            **最初的版本**：{{#code_turn.secret_text#}}
+
+            > 想看整条传播链？打开 `http://127.0.0.1:8765/wall/{{#sys.user_id#}}`（把地址换成你的后端地址）。
+          desc: ''
+          selected: false
+          title: 打烊
+          type: answer
+          variables: []
+        height: 120
+        id: answer_end
+        position:
+          x: 2740
+          y: 180
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7
