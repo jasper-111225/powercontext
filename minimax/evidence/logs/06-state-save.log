@@ -1,5 +1,5 @@
 {
-  "task_id": "sdd-8e29f257",
+  "task_id": "sdd-7d0b3d85",
   "project": "minimart",
   "stage": "verified",
   "task": "为订单查询增加状态筛选与最低金额筛选：支持 status 与 min_total 参数，过滤后分页，保持创建时间倒序，并校验非法参数。",
@@ -15,16 +15,16 @@
       "command": "pytest tests/test_order_filters.py",
       "exit_code": 0,
       "log": "evidence/logs/04-target-tests.log",
-      "at": "2026-10-28T01:22:05+08:00"
+      "at": "2026-10-28T01:26:37+08:00"
     },
     {
       "command": "pytest tests/test_service_regression.py",
       "exit_code": 0,
       "log": "evidence/logs/04-regression-tests.log",
-      "at": "2026-10-28T01:22:05+08:00"
+      "at": "2026-10-28T01:26:37+08:00"
     }
   ],
-  "saved_at": "2026-10-28T01:22:05+08:00",
+  "saved_at": "2026-10-28T01:26:37+08:00",
   "requirements": [
     "REQ-001.1",
     "REQ-001.2",
@@ -33,11 +33,11 @@
   "files_to_modify": [
     "src/minimart/service.py"
   ],
-  "context_digest": "8e29f257b4833b77ed43460f4e60bd55d3093c357da7fad6d43ff464987785e1",
-  "scope_id": "scp_7zy3754f5a94hv1cdtfmkv6123",
+  "context_digest": "7d0b3d85b3cc611c84ad39b0b5dfdc365fec5d3ebc4fc32fec0ea09daccb5d1e",
+  "scope_id": "scp_47r5y6jbcwyaafxqa4v3evsyzz",
   "memory": {
     "family": "atomic-memory",
-    "artifact_id": "art_ddb6bcba4e20490bb37b8b19edff57fa",
+    "artifact_id": "art_c5a84d6b4fd14785be80c61499977953",
     "revision": 1
   }
 }

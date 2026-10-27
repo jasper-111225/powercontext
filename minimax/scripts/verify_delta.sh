@@ -19,18 +19,28 @@ git -C "$REPO_ROOT" worktree add --detach "$WT" "$BASE_REF" > /dev/null
 cleanup() { git -C "$REPO_ROOT" worktree remove --force "$WT" > /dev/null 2>&1 || true; }
 trap cleanup EXIT
 
-run_suite() { # <project_dir> <test_path> <log_file>
-  ( cd "$1" && PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$PY" -m pytest -q "$2" ) > "$3" 2>&1
-  echo $?
+run_suite() { # <project_dir> <test_path> <log_file> <commit>
+  local rc
+  {
+    echo "# commit: $4"
+    echo "# command: $PY -m pytest -q $2"
+    echo "# cwd: $1"
+    echo
+    ( cd "$1" && PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$PY" -m pytest -q "$2" )
+    rc=$?
+    echo
+    echo "# exit: $rc"
+  } > "$3" 2>&1
+  echo "$rc"
 }
 
 echo "base commit: $(git -C "$REPO_ROOT" rev-parse --short "$BASE_REF")"
 echo "head commit: $(git -C "$REPO_ROOT" rev-parse --short HEAD)"
 
-before_target=$(run_suite "$WT/minimax/demo_project" tests/test_order_filters.py "$LOG/before-target.log")
-before_regression=$(run_suite "$WT/minimax/demo_project" tests/test_service_regression.py "$LOG/before-regression.log")
-after_target=$(run_suite "$MINIMAX_DIR/demo_project" tests/test_order_filters.py "$LOG/after-target.log")
-after_regression=$(run_suite "$MINIMAX_DIR/demo_project" tests/test_service_regression.py "$LOG/after-regression.log")
+before_target=$(run_suite "$WT/minimax/demo_project" tests/test_order_filters.py "$LOG/before-target.log" "$BASE_REF")
+before_regression=$(run_suite "$WT/minimax/demo_project" tests/test_service_regression.py "$LOG/before-regression.log" "$BASE_REF")
+after_target=$(run_suite "$MINIMAX_DIR/demo_project" tests/test_order_filters.py "$LOG/after-target.log" HEAD)
+after_regression=$(run_suite "$MINIMAX_DIR/demo_project" tests/test_service_regression.py "$LOG/after-regression.log" HEAD)
 
 mkdir -p "$MINIMAX_DIR/evidence/diff"
 git -C "$REPO_ROOT" diff "$BASE_REF" HEAD -- minimax/demo_project > "$MINIMAX_DIR/evidence/diff/req-001.patch"

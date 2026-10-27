@@ -1,7 +1,7 @@
 # 开发上下文 · minimart
 
 - 任务：为订单查询增加状态筛选与最低金额筛选：支持 status 与 min_total 参数，过滤后分页，保持创建时间倒序，并校验非法参数。
-- 生成时间：2026-10-28T01:22:03+08:00
+- 生成时间：2026-10-28T01:26:36+08:00
 - 选择方式：seekdb full-text search over spec chunks, then REQ traceability join
 - 选中需求：REQ-001.1, REQ-001.2, REQ-001.3
 

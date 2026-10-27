@@ -27,7 +27,21 @@
 | MiniMax | `api.minimaxi.com`，OpenAI 兼容 `/v1/chat/completions`，模型 `MiniMax-M3` |
 | Python 依赖 | `pymysql==1.2.3`、`pytest==9.1.1`（见 `requirements.txt`） |
 
-> seekdb 连接可用环境变量覆盖：`SDDCTX_MYSQL_HOST/PORT/USER/PASSWORD/DATABASE`。
+### 2.1 准备 seekdb
+
+评审环境若没有现成实例，任选一种方式启动（本作品只用到 MySQL 协议 2881 端口）：
+
+```bash
+# Docker
+docker run -d --name seekdb -p 2881:2881 -v ./seekdb-data:/var/lib/oceanbase \
+  oceanbase/seekdb:latest
+# 或二进制安装
+curl -fsSL https://obportal.s3.ap-southeast-1.amazonaws.com/download-center/opensource/seekdb/seekdb_install.sh | bash
+```
+
+连接参数默认 `127.0.0.1:2881`、用户 `root`、空密码；首次 `sddctx import` 会自动创建
+`minimax_sdd` 库、表与 ngram 全文索引。指向其他实例时用环境变量覆盖：
+`SDDCTX_MYSQL_HOST/PORT/USER/PASSWORD/DATABASE`。
 > PowerContext 地址/令牌：`SDDCTX_POWERCONTEXT_URL/TOKEN`。
 > MiniMax：`MINIMAX_API_KEY`（或 `.runtime/minimax.key`，已被 `.gitignore` 忽略）。
 

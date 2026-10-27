@@ -1,1 +1,7 @@
+# commit: HEAD
+# command: /home/jasper/seekdb/source/powercontext/minimax/.venv/bin/python -m pytest -q tests/test_service_regression.py
+# cwd: /home/jasper/seekdb/source/powercontext/minimax/demo_project
+
 ......                                                                   [100%]
+
+# exit: 0

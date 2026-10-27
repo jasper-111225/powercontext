@@ -2,7 +2,7 @@
   "task": "为订单查询增加状态筛选与最低金额筛选：支持 status 与 min_total 参数，过滤后分页，保持创建时间倒序，并校验非法参数。",
   "project": "minimart",
   "root": "/home/jasper/seekdb/source/powercontext/minimax/demo_project",
-  "generated_at": "2026-10-28T01:22:03+08:00",
+  "generated_at": "2026-10-28T01:26:35+08:00",
   "selection": {
     "method": "seekdb full-text search over spec chunks, then REQ traceability join",
     "mentioned_requirements": [],

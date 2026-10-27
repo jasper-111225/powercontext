@@ -1,7 +1,7 @@
 # 开发上下文 · minimart
 
 - 任务：为订单查询增加状态筛选与最低金额筛选：支持 status 与 min_total 参数，过滤后分页，保持创建时间倒序，并校验非法参数。
-- 生成时间：2026-10-28T01:22:15+08:00
+- 生成时间：2026-10-28T01:26:46+08:00
 - 选择方式：seekdb full-text search over spec chunks, then REQ traceability join
 - 选中需求：REQ-001.1, REQ-001.2, REQ-001.3
 
@@ -57,9 +57,9 @@
 - `tests/test_service_regression.py::test_summary_counts_and_totals` 行 50-52（REQ-002.3）
 
 ## 4. 任务状态（PowerContext）
-- 任务 id：sdd-8e29f257
+- 任务 id：sdd-7d0b3d85
 - 阶段：verified
-- 更新时间：2026-10-28T01:22:05+08:00
+- 更新时间：2026-10-28T01:26:37+08:00
 - 已完成：
   - [x] 导入规格/代码/测试到 seekdb
   - [x] 生成任务上下文并校验来源
@@ -68,6 +68,6 @@
 - 待办：
   - [ ] （无）
 - 验证结果：
-  - `pytest tests/test_order_filters.py` → exit 0（2026-10-28T01:22:05+08:00）
-  - `pytest tests/test_service_regression.py` → exit 0（2026-10-28T01:22:05+08:00）
+  - `pytest tests/test_order_filters.py` → exit 0（2026-10-28T01:26:37+08:00）
+  - `pytest tests/test_service_regression.py` → exit 0（2026-10-28T01:26:37+08:00）
 

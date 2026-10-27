@@ -1,1 +1,7 @@
+# commit: ab53d2cf537decead03c7f58094c8949f4b24b5f
+# command: /home/jasper/seekdb/source/powercontext/minimax/.venv/bin/python -m pytest -q tests/test_order_filters.py
+# cwd: demo_project
+
 .........                                                                [100%]
+
+# exit: 0

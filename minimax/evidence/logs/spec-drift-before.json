@@ -2,7 +2,7 @@
   "task": "调整审计日志导出文件的保留期限并确认编码要求",
   "project": "drift",
   "root": "/home/jasper/seekdb/source/powercontext/minimax/.runtime/spec-drift",
-  "generated_at": "2026-10-28T01:22:15+08:00",
+  "generated_at": "2026-10-28T01:26:47+08:00",
   "selection": {
     "method": "seekdb full-text search over spec chunks, then REQ traceability join",
     "mentioned_requirements": [],

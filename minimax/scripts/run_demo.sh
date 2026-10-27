@@ -18,8 +18,18 @@ FRESH="${FRESH:-1}"
 step() { printf '\n=== %s ===\n' "$1"; }
 
 run_suite() { # <project_dir> <test_path> <log_file>
-  ( cd "$1" && PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$PY" -m pytest -q "$2" ) > "$3" 2>&1
-  echo $?
+  local rc
+  {
+    echo "# commit: $(git -C "$MINIMAX_DIR" rev-parse HEAD)"
+    echo "# command: $PY -m pytest -q $2"
+    echo "# cwd: $1"
+    echo
+    ( cd "$1" && PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "$PY" -m pytest -q "$2" )
+    rc=$?
+    echo
+    echo "# exit: $rc"
+  } > "$3" 2>&1
+  echo "$rc"
 }
 
 if [[ "$FRESH" == "1" ]]; then

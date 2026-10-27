@@ -1,8 +1,12 @@
+# commit: 6439d36b
+# command: /home/jasper/seekdb/source/powercontext/minimax/.venv/bin/python -m pytest -q tests/test_order_filters.py
+# cwd: /home/jasper/seekdb/source/powercontext/minimax/.runtime/base-worktree/minimax/demo_project
+
 FFFFFFFFF                                                                [100%]
 =================================== FAILURES ===================================
 ____________________________ test_filter_by_status _____________________________
 
-service = <minimart.service.OrderService object at 0x79405fcce540>
+service = <minimart.service.OrderService object at 0x7b35dc8c64e0>
 
     def test_filter_by_status(service):
         """@req REQ-001.1"""
@@ -12,7 +16,7 @@ service = <minimart.service.OrderService object at 0x79405fcce540>
 tests/test_order_filters.py:17: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fcce540>, page = 1
+self = <minimart.service.OrderService object at 0x7b35dc8c64e0>, page = 1
 page_size = 10, status = 'paid', min_total = None
 
     def list_orders(
@@ -40,7 +44,7 @@ E           NotImplementedError: status/min_total filtering is not implemented y
 src/minimart/service.py:39: NotImplementedError
 _________________________ test_blank_status_is_ignored _________________________
 
-service = <minimart.service.OrderService object at 0x79405fcce9c0>
+service = <minimart.service.OrderService object at 0x7b35dc8c6f60>
 
     def test_blank_status_is_ignored(service):
         """@req REQ-001.1"""
@@ -50,7 +54,7 @@ service = <minimart.service.OrderService object at 0x79405fcce9c0>
 tests/test_order_filters.py:23: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fcce9c0>, page = 1
+self = <minimart.service.OrderService object at 0x7b35dc8c6f60>, page = 1
 page_size = 10, status = '   ', min_total = None
 
     def list_orders(
@@ -78,7 +82,7 @@ E           NotImplementedError: status/min_total filtering is not implemented y
 src/minimart/service.py:39: NotImplementedError
 __________________________ test_unknown_status_raises __________________________
 
-service = <minimart.service.OrderService object at 0x79405fccd790>
+service = <minimart.service.OrderService object at 0x7b35dc8c5730>
 
     def test_unknown_status_raises(service):
         """@req REQ-001.1"""
@@ -88,7 +92,7 @@ service = <minimart.service.OrderService object at 0x79405fccd790>
 tests/test_order_filters.py:30: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fccd790>, page = 1
+self = <minimart.service.OrderService object at 0x7b35dc8c5730>, page = 1
 page_size = 10, status = 'refunded', min_total = None
 
     def list_orders(
@@ -116,7 +120,7 @@ E           NotImplementedError: status/min_total filtering is not implemented y
 src/minimart/service.py:39: NotImplementedError
 _________________________ test_min_total_is_inclusive __________________________
 
-service = <minimart.service.OrderService object at 0x79405fccd340>
+service = <minimart.service.OrderService object at 0x7b35dc8c5430>
 
     def test_min_total_is_inclusive(service):
         """@req REQ-001.2"""
@@ -126,7 +130,7 @@ service = <minimart.service.OrderService object at 0x79405fccd340>
 tests/test_order_filters.py:35: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fccd340>, page = 1
+self = <minimart.service.OrderService object at 0x7b35dc8c5430>, page = 1
 page_size = 10, status = None, min_total = 5000
 
     def list_orders(
@@ -154,7 +158,7 @@ E           NotImplementedError: status/min_total filtering is not implemented y
 src/minimart/service.py:39: NotImplementedError
 ________________________ test_min_total_zero_is_ignored ________________________
 
-service = <minimart.service.OrderService object at 0x79405fccf5f0>
+service = <minimart.service.OrderService object at 0x7b35dc8c7560>
 
     def test_min_total_zero_is_ignored(service):
         """@req REQ-001.2"""
@@ -164,7 +168,7 @@ service = <minimart.service.OrderService object at 0x79405fccf5f0>
 tests/test_order_filters.py:46: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fccf5f0>, page = 1
+self = <minimart.service.OrderService object at 0x7b35dc8c7560>, page = 1
 page_size = 10, status = None, min_total = 0
 
     def list_orders(
@@ -192,7 +196,7 @@ E           NotImplementedError: status/min_total filtering is not implemented y
 src/minimart/service.py:39: NotImplementedError
 ________________________ test_negative_min_total_raises ________________________
 
-service = <minimart.service.OrderService object at 0x79405fd1c140>
+service = <minimart.service.OrderService object at 0x7b35dc918110>
 
     def test_negative_min_total_raises(service):
         """@req REQ-001.2"""
@@ -202,7 +206,7 @@ service = <minimart.service.OrderService object at 0x79405fd1c140>
 tests/test_order_filters.py:52: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fd1c140>, page = 1
+self = <minimart.service.OrderService object at 0x7b35dc918110>, page = 1
 page_size = 10, status = None, min_total = -1
 
     def list_orders(
@@ -230,7 +234,7 @@ E           NotImplementedError: status/min_total filtering is not implemented y
 src/minimart/service.py:39: NotImplementedError
 ____________________ test_filters_combine_before_pagination ____________________
 
-service = <minimart.service.OrderService object at 0x79405fd1c8c0>
+service = <minimart.service.OrderService object at 0x7b35dc918890>
 
     def test_filters_combine_before_pagination(service):
         """@req REQ-001.3"""
@@ -240,7 +244,7 @@ service = <minimart.service.OrderService object at 0x79405fd1c8c0>
 tests/test_order_filters.py:57: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fd1c8c0>, page = 2
+self = <minimart.service.OrderService object at 0x7b35dc918890>, page = 2
 page_size = 2, status = 'paid', min_total = None
 
     def list_orders(
@@ -268,7 +272,7 @@ E           NotImplementedError: status/min_total filtering is not implemented y
 src/minimart/service.py:39: NotImplementedError
 ________________________ test_filters_keep_stable_order ________________________
 
-service = <minimart.service.OrderService object at 0x79405fd1d1c0>
+service = <minimart.service.OrderService object at 0x7b35dc919190>
 
     def test_filters_keep_stable_order(service):
         """@req REQ-001.4"""
@@ -278,7 +282,7 @@ service = <minimart.service.OrderService object at 0x79405fd1d1c0>
 tests/test_order_filters.py:63: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fd1d1c0>, page = 1
+self = <minimart.service.OrderService object at 0x7b35dc919190>, page = 1
 page_size = 10, status = 'paid', min_total = 3000
 
     def list_orders(
@@ -306,7 +310,7 @@ E           NotImplementedError: status/min_total filtering is not implemented y
 src/minimart/service.py:39: NotImplementedError
 ____________________ test_filters_do_not_mutate_repository _____________________
 
-service = <minimart.service.OrderService object at 0x79405fd1d190>
+service = <minimart.service.OrderService object at 0x7b35dc919160>
 orders = [Order(order_id='O-1001', customer='alice', status='paid', total_cents=5000, created_at=datetime.datetime(2026, 10, 1,...id='O-1006', customer='frank', status='cancelled', total_cents=9000, created_at=datetime.datetime(2026, 10, 6, 10, 0))]
 
     def test_filters_do_not_mutate_repository(service, orders):
@@ -317,7 +321,7 @@ orders = [Order(order_id='O-1001', customer='alice', status='paid', total_cents=
 tests/test_order_filters.py:70: 
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = <minimart.service.OrderService object at 0x79405fd1d190>, page = 1
+self = <minimart.service.OrderService object at 0x7b35dc919160>, page = 1
 page_size = 10, status = 'shipped', min_total = 1000
 
     def list_orders(
@@ -353,3 +357,5 @@ FAILED tests/test_order_filters.py::test_negative_min_total_raises - NotImple...
 FAILED tests/test_order_filters.py::test_filters_combine_before_pagination - ...
 FAILED tests/test_order_filters.py::test_filters_keep_stable_order - NotImple...
 FAILED tests/test_order_filters.py::test_filters_do_not_mutate_repository - N...
+
+# exit: 1
