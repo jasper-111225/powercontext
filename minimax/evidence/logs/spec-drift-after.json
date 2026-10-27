@@ -1,0 +1,95 @@
+{
+  "task": "调整审计日志导出文件的保留期限并确认编码要求",
+  "project": "drift",
+  "root": "/home/jasper/seekdb/source/powercontext/minimax/.runtime/spec-drift",
+  "generated_at": "2026-10-28T01:09:29+08:00",
+  "selection": {
+    "method": "seekdb full-text search over spec chunks, then REQ traceability join",
+    "mentioned_requirements": [],
+    "selected_requirements": [
+      "REQ-010",
+      "REQ-010.1",
+      "REQ-010.2"
+    ],
+    "new_requirements": [
+      "REQ-010",
+      "REQ-010.1",
+      "REQ-010.2"
+    ],
+    "spec_scores": [
+      {
+        "path": "specs/REQ-010-audit-export.md",
+        "symbol": "REQ-010.1 保留期限",
+        "score": 17.2806
+      },
+      {
+        "path": "specs/REQ-010-audit-export.md",
+        "symbol": "REQ-010 审计日志导出",
+        "score": 12.1245
+      },
+      {
+        "path": "specs/REQ-010-audit-export.md",
+        "symbol": "REQ-010.2 文件编码",
+        "score": 8.9757
+      }
+    ]
+  },
+  "specs": [
+    {
+      "req_ids": [
+        "REQ-010.1"
+      ],
+      "path": "specs/REQ-010-audit-export.md",
+      "symbol": "REQ-010.1 保留期限",
+      "title": "REQ-010.1 保留期限",
+      "lines": [
+        7,
+        10
+      ],
+      "version": 2,
+      "change_kind": "new",
+      "score": 17.2806,
+      "excerpt": "## REQ-010.1 保留期限\n\n审计日志导出文件保留 90 天，到期后由后台任务清理，清理前必须记录一条审计事件。\n"
+    },
+    {
+      "req_ids": [
+        "REQ-010"
+      ],
+      "path": "specs/REQ-010-audit-export.md",
+      "symbol": "REQ-010 审计日志导出",
+      "title": "REQ-010 审计日志导出",
+      "lines": [
+        1,
+        6
+      ],
+      "version": 2,
+      "change_kind": "new",
+      "score": 12.1245,
+      "excerpt": "# REQ-010 审计日志导出\n\n- 状态：active\n- 版本：2\n- 变更：新增\n"
+    },
+    {
+      "req_ids": [
+        "REQ-010.2"
+      ],
+      "path": "specs/REQ-010-audit-export.md",
+      "symbol": "REQ-010.2 文件编码",
+      "title": "REQ-010.2 文件编码",
+      "lines": [
+        11,
+        13
+      ],
+      "version": 2,
+      "change_kind": "new",
+      "score": 8.9757,
+      "excerpt": "## REQ-010.2 文件编码\n\n导出文件使用 UTF-8 编码，字段以逗号分隔；文件名格式为 `audit-YYYYMMDD.csv`。导出内容不得包含用户手机号。"
+    }
+  ],
+  "code": [],
+  "files_to_modify": [],
+  "tests": {
+    "target": [],
+    "regression": []
+  },
+  "state": null,
+  "sources_verified": true
+}
