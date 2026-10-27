@@ -17,6 +17,8 @@
 from __future__ import annotations
 
 import json
+import math
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from itertools import chain
@@ -106,6 +108,7 @@ class PreparedContextBuild:
     origins: tuple[PreparedContextOrigin, ...]
     omissions: PreparedContextOmissions = PreparedContextOmissions()
     code_origins: tuple[CodeEvidenceRef, ...] = ()
+    fragments: tuple[ContextFragment, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -115,6 +118,16 @@ class MemoryEntryAddress:
     memory: ArtifactAddress
     entry_id: str
     entry_version_id: str
+
+
+@dataclass(frozen=True)
+class ContextFragment:
+    """One literal slice of a Memory entry delivered as selected evidence."""
+
+    address: MemoryEntryAddress
+    start: int
+    end: int
+    text: str
 
 
 PreparedContextOrigin = MemoryCitation | ArtifactRef | MemoryEntryAddress | ArtifactAddress
@@ -235,6 +248,13 @@ class PreparedContextBuilder:
         if sum(len(candidates.hits) for candidates in experience_candidates) > self.experience_candidate_limit:
             raise PreparedContextInvariantError("experience-candidate-limit")
 
+        if request.evidence_selection:
+            return self._build_evidence_result(
+                request=request,
+                current_scope_id=current_scope_id,
+                memory_candidates=memory_candidates,
+            )
+
         content, origins, omissions = self._select_entries(
             request=request,
             current_scope_id=current_scope_id,
@@ -255,6 +275,67 @@ class PreparedContextBuilder:
             origins=origins,
             omissions=omissions,
         )
+
+    def _build_evidence_result(
+        self,
+        *,
+        request: PrepareContextRequest,
+        current_scope_id: str | None,
+        memory_candidates: Sequence[PreparedMemoryCandidates],
+    ) -> PreparedContextBuild:
+        """Render query-selected Memory fragments within the caller's byte budget."""
+
+        content, origins, fragments, omissions = self._select_evidence(
+            request=request,
+            current_scope_id=current_scope_id,
+            memory_candidates=memory_candidates,
+        )
+        if content is None:
+            return PreparedContextBuild(context=self.empty(), origins=(), omissions=omissions)
+        content_bytes = len(content.encode("utf-8"))
+        if content_bytes > request.max_bytes:
+            raise PreparedContextInvariantError("output-budget")
+        return PreparedContextBuild(
+            context=PreparedContext(status="ready", content=content, content_bytes=content_bytes),
+            origins=origins,
+            fragments=fragments,
+            omissions=omissions,
+        )
+
+    def _select_evidence(
+        self,
+        *,
+        request: PrepareContextRequest,
+        current_scope_id: str | None,
+        memory_candidates: Sequence[PreparedMemoryCandidates],
+    ) -> tuple[
+        str | None,
+        tuple[PreparedContextOrigin, ...],
+        tuple[ContextFragment, ...],
+        PreparedContextOmissions,
+    ]:
+        """Select the highest-scoring literal Memory spans that fit the byte budget."""
+
+        records = _evidence_records(memory_candidates, current_scope_id)
+        if not records:
+            return None, (), (), PreparedContextOmissions()
+        scored = _rank_evidence(records, request.query)
+        chosen, _items = _fit_evidence(scored, request.max_bytes)
+        if not chosen:
+            return None, (), (), PreparedContextOmissions(dropped_items=len(scored))
+        chosen.sort(key=lambda item: (item[0], item[1]))
+        fragments = tuple(
+            ContextFragment(address=address, start=start, end=end, text=span)
+            for _hit_index, start, end, address, span in chosen
+        )
+        rendered = _render_fragments(
+            tuple(
+                _fragment_item(fragment.address, fragment.start, fragment.end, fragment.text) for fragment in fragments
+            )
+        )
+        origins = tuple(fragment.address for fragment in fragments)
+        omissions = PreparedContextOmissions(dropped_items=len(scored) - len(fragments))
+        return rendered, origins, fragments, omissions
 
     def probe_budget(
         self,
@@ -728,3 +809,98 @@ def _truncate_utf8(text: str, byte_budget: int) -> str:
     prefix_budget = byte_budget - len(_ELLIPSIS.encode("utf-8"))
     encoded_prefix = text.encode("utf-8")[:prefix_budget]
     return f"{encoded_prefix.decode('utf-8', errors='ignore')}{_ELLIPSIS}"
+
+
+_TOKEN_RE = re.compile(r"[0-9a-z_]+|[\u4e00-\u9fff]+", re.IGNORECASE)
+_SPAN_RE = re.compile(r"[^.!?\u3002\uff01\uff1f\n]+[.!?\u3002\uff01\uff1f]?")
+
+
+def _tokens(text: str) -> set[str]:
+    return {match.group(0).casefold() for match in _TOKEN_RE.finditer(text)}
+
+
+def _spans(text: str) -> tuple[tuple[int, int], ...]:
+    spans: list[tuple[int, int]] = []
+    for match in _SPAN_RE.finditer(text):
+        start, end = match.start(), match.end()
+        while start < end and text[start].isspace():
+            start += 1
+        while end > start and text[end - 1].isspace():
+            end -= 1
+        if start < end:
+            spans.append((start, end))
+    return tuple(spans)
+
+
+def _render_fragments(items: Sequence[dict[str, object]]) -> str:
+    envelope = {"trust": "untrusted_history", "items": list(items)}
+    encoded = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return "\n\n".join((TRUST_POLICY, f"{_BEGIN_MARKER}\n{encoded}\n{_END_MARKER}"))
+
+
+def _fragment_item(address: MemoryEntryAddress, start: int, end: int, text: str) -> dict[str, object]:
+    return {
+        "citation": {
+            "scope_id": address.memory.scope_id,
+            "memory_ref": address.memory.artifact.model_dump(mode="json"),
+            "entry_id": address.entry_id,
+            "entry_version_id": address.entry_version_id,
+        },
+        "content": text,
+        "start": start,
+        "end": end,
+    }
+
+
+def _evidence_records(
+    memory_candidates: Sequence[PreparedMemoryCandidates],
+    current_scope_id: str | None,
+) -> list[tuple[int, int, int, MemoryEntryAddress, str, set[str]]]:
+    records: list[tuple[int, int, int, MemoryEntryAddress, str, set[str]]] = []
+    hit_index = 0
+    for candidates in memory_candidates:
+        scope_id = candidates.scope_id or current_scope_id
+        for hit in candidates.hits:
+            address = MemoryEntryAddress(
+                memory=ArtifactAddress(scope_id=scope_id or "", artifact=hit.memory_ref),
+                entry_id=hit.entry_id,
+                entry_version_id=hit.entry_version_id,
+            )
+            for start, end in _spans(hit.text):
+                span = hit.text[start:end]
+                records.append((hit_index, start, end, address, span, _tokens(span)))
+            hit_index += 1
+    return records
+
+
+def _rank_evidence(
+    records: Sequence[tuple[int, int, int, MemoryEntryAddress, str, set[str]]],
+    query: str,
+) -> list[tuple[float, int, int, int, MemoryEntryAddress, str]]:
+    document_frequency: dict[str, int] = {}
+    for record in records:
+        for token in record[5]:
+            document_frequency[token] = document_frequency.get(token, 0) + 1
+    total = len(records)
+    query_tokens = _tokens(query)
+    scored: list[tuple[float, int, int, int, MemoryEntryAddress, str]] = []
+    for record in records:
+        score = sum(math.log(1 + total / document_frequency[token]) for token in query_tokens & record[5])
+        if score > 0:
+            scored.append((score, *record[:5]))
+    scored.sort(key=lambda item: (-item[0], item[1], item[2]))
+    return scored
+
+
+def _fit_evidence(
+    scored: Sequence[tuple[float, int, int, int, MemoryEntryAddress, str]],
+    max_bytes: int,
+) -> tuple[list[tuple[int, int, int, MemoryEntryAddress, str]], list[dict[str, object]]]:
+    chosen: list[tuple[int, int, int, MemoryEntryAddress, str]] = []
+    items: list[dict[str, object]] = []
+    for _score, hit_index, start, end, address, span in scored:
+        candidate = _fragment_item(address, start, end, span)
+        if len(_render_fragments((*items, candidate)).encode("utf-8")) <= max_bytes:
+            items.append(candidate)
+            chosen.append((hit_index, start, end, address, span))
+    return chosen, items
