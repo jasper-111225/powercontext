@@ -2,7 +2,7 @@
   "task": "调整审计日志导出文件的保留期限并确认编码要求",
   "project": "drift",
   "root": "/home/jasper/seekdb/source/powercontext/minimax/.runtime/spec-drift",
-  "generated_at": "2026-10-28T01:20:59+08:00",
+  "generated_at": "2026-10-28T01:22:15+08:00",
   "selection": {
     "method": "seekdb full-text search over spec chunks, then REQ traceability join",
     "mentioned_requirements": [],
@@ -20,17 +20,17 @@
       {
         "path": "specs/REQ-010-audit-export.md",
         "symbol": "REQ-010.1 保留期限",
-        "score": 17.6641
+        "score": 17.5393
       },
       {
         "path": "specs/REQ-010-audit-export.md",
         "symbol": "REQ-010 审计日志导出",
-        "score": 12.4016
+        "score": 12.3115
       },
       {
         "path": "specs/REQ-010-audit-export.md",
         "symbol": "REQ-010.2 文件编码",
-        "score": 9.7229
+        "score": 9.6601
       }
     ]
   },
@@ -48,7 +48,7 @@
       ],
       "version": 1,
       "change_kind": "new",
-      "score": 17.6641,
+      "score": 17.5393,
       "excerpt": "## REQ-010.1 保留期限\n\n审计日志导出文件保留 30 天，到期后由后台任务清理，清理前必须记录一条审计事件。\n"
     },
     {
@@ -64,7 +64,7 @@
       ],
       "version": 1,
       "change_kind": "new",
-      "score": 12.4016,
+      "score": 12.3115,
       "excerpt": "# REQ-010 审计日志导出\n\n- 状态：active\n- 版本：1\n- 变更：新增\n"
     },
     {
@@ -80,7 +80,7 @@
       ],
       "version": 1,
       "change_kind": "new",
-      "score": 9.7229,
+      "score": 9.6601,
       "excerpt": "## REQ-010.2 文件编码\n\n导出文件使用 UTF-8 编码，字段以逗号分隔；文件名格式为 `audit-YYYYMMDD.csv`。"
     }
   ],

@@ -64,7 +64,7 @@ MINIMAX_API_KEY=... ./scripts/run_demo.sh      # 重置环境 → 导入 → 上
 
 1. 重置 seekdb 库与 PowerContext 数据（从空状态开始）；
 2. 启动 PowerContext Server，确认任务状态为 0 条；
-3. `sddctx import` 把 10 个文档切成 41 个 chunk 写入 seekdb；
+3. `sddctx import` 把 10 个文档切成 43 个 chunk 写入 seekdb；
 4. `sddctx context` 为任务生成上下文（3 条规格 / 1 个代码文件 / 9 个目标测试 / 6 个回归测试）；
 5. 运行目标测试与回归测试，记录退出码；
 6. 校验上下文里每个来源都真实存在（文件 + 行号 + 内容一致）；

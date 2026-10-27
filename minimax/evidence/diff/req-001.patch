@@ -1,0 +1,83 @@
+diff --git a/minimax/demo_project/src/minimart/service.py b/minimax/demo_project/src/minimart/service.py
+index 7758e565..ea661a0d 100644
+--- a/minimax/demo_project/src/minimart/service.py
++++ b/minimax/demo_project/src/minimart/service.py
+@@ -18,7 +18,7 @@ class OrderService:
+     def __init__(self, repository: OrderRepository) -> None:
+         self._repository = repository
+ 
+-    # @req REQ-002.1, REQ-002.2
++    # @req REQ-002.1, REQ-002.2, REQ-001.1, REQ-001.2, REQ-001.3
+     def list_orders(
+         self,
+         page: int = 1,
+@@ -28,19 +28,23 @@ class OrderService:
+     ) -> list[Order]:
+         """Return one page of orders, newest first.
+ 
+-        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+-        not implemented yet: the parameters are accepted so callers can adopt
+-        the documented signature before the behaviour lands.
++        Blank ``status`` values and a zero ``min_total`` disable their respective
++        filters. Filters are applied before pagination.
+         """
+         self._validate_paging(page, page_size)
+-        if status is not None or min_total is not None:
+-            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+-            # min_total bound.
+-            raise NotImplementedError(
+-                "status/min_total filtering is not implemented yet (REQ-001)"
+-            )
++        normalized_status = self._normalize_status(status)
++        minimum_total = self._normalize_min_total(min_total)
+ 
+         orders = self._sorted_orders()
++        if normalized_status is not None:
++            orders = [
++                order for order in orders if order.status == normalized_status
++            ]
++        if minimum_total is not None:
++            orders = [
++                order for order in orders if order.total_cents >= minimum_total
++            ]
++
+         start = (page - 1) * page_size
+         return orders[start : start + page_size]
+ 
+@@ -60,6 +64,36 @@ class OrderService:
+             reverse=True,
+         )
+ 
++    def _normalize_status(self, status: str | None) -> str | None:
++        # @req REQ-001.1
++        if status is None:
++            return None
++        if not isinstance(status, str):
++            raise ValidationError(
++                "status must be one of: draft, paid, shipped, cancelled"
++            )
++        if not status.strip():
++            return None
++        if not status_is_valid(status):
++            raise ValidationError(
++                "status must be one of: draft, paid, shipped, cancelled"
++            )
++        return status
++
++    def _normalize_min_total(self, min_total: int | None) -> int | None:
++        # @req REQ-001.2
++        if min_total is None:
++            return None
++        if (
++            not isinstance(min_total, int)
++            or isinstance(min_total, bool)
++            or min_total < 0
++        ):
++            raise ValidationError("min_total must be an integer >= 0")
++        if min_total == 0:
++            return None
++        return min_total
++
+     def _validate_paging(self, page: int, page_size: int) -> None:
+         # @req REQ-002.2
+         if not isinstance(page, int) or isinstance(page, bool) or page < 1:

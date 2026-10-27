@@ -5,11 +5,11 @@ spec updated
 {
   "before": {
     "version": 1,
-    "rule": "## REQ-010.1 保留期限"
+    "rule": "审计日志导出文件保留 30 天，到期后由后台任务清理，清理前必须记录一条审计事件。"
   },
   "after": {
     "version": 2,
-    "rule": "## REQ-010.1 保留期限"
+    "rule": "审计日志导出文件保留 90 天，到期后由后台任务清理，清理前必须记录一条审计事件。"
   },
   "result": "PASS: context follows the re-imported specification"
 }

@@ -1,5 +1,6 @@
 {
   "checks": {
+    "starts from empty task state": true,
     "target tests pass": true,
     "regression tests pass": true,
     "context carries saved state": true,

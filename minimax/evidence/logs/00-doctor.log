@@ -4,32 +4,7 @@
     "version": "5.7.25-OceanBase seekdb-v1.4.0.0",
     "user": "root@%",
     "fulltext": true,
-    "stats": [
-      {
-        "project": "drift",
-        "kind": "spec",
-        "chunks": 3,
-        "documents": 1
-      },
-      {
-        "project": "minimart",
-        "kind": "code",
-        "chunks": 14,
-        "documents": 4
-      },
-      {
-        "project": "minimart",
-        "kind": "spec",
-        "chunks": 12,
-        "documents": 2
-      },
-      {
-        "project": "minimart",
-        "kind": "test",
-        "chunks": 15,
-        "documents": 2
-      }
-    ]
+    "stats": []
   },
   "powercontext": {
     "ok": false,

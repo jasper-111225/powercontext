@@ -1,0 +1,355 @@
+FFFFFFFFF                                                                [100%]
+=================================== FAILURES ===================================
+____________________________ test_filter_by_status _____________________________
+
+service = <minimart.service.OrderService object at 0x79405fcce540>
+
+    def test_filter_by_status(service):
+        """@req REQ-001.1"""
+>       result = service.list_orders(status="paid")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_order_filters.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fcce540>, page = 1
+page_size = 10, status = 'paid', min_total = None
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+_________________________ test_blank_status_is_ignored _________________________
+
+service = <minimart.service.OrderService object at 0x79405fcce9c0>
+
+    def test_blank_status_is_ignored(service):
+        """@req REQ-001.1"""
+>       result = service.list_orders(status="   ")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_order_filters.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fcce9c0>, page = 1
+page_size = 10, status = '   ', min_total = None
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+__________________________ test_unknown_status_raises __________________________
+
+service = <minimart.service.OrderService object at 0x79405fccd790>
+
+    def test_unknown_status_raises(service):
+        """@req REQ-001.1"""
+        with pytest.raises(ValidationError):
+>           service.list_orders(status="refunded")
+
+tests/test_order_filters.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fccd790>, page = 1
+page_size = 10, status = 'refunded', min_total = None
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+_________________________ test_min_total_is_inclusive __________________________
+
+service = <minimart.service.OrderService object at 0x79405fccd340>
+
+    def test_min_total_is_inclusive(service):
+        """@req REQ-001.2"""
+>       result = service.list_orders(min_total=5000)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_order_filters.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fccd340>, page = 1
+page_size = 10, status = None, min_total = 5000
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+________________________ test_min_total_zero_is_ignored ________________________
+
+service = <minimart.service.OrderService object at 0x79405fccf5f0>
+
+    def test_min_total_zero_is_ignored(service):
+        """@req REQ-001.2"""
+>       assert len(service.list_orders(min_total=0)) == 6
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_order_filters.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fccf5f0>, page = 1
+page_size = 10, status = None, min_total = 0
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+________________________ test_negative_min_total_raises ________________________
+
+service = <minimart.service.OrderService object at 0x79405fd1c140>
+
+    def test_negative_min_total_raises(service):
+        """@req REQ-001.2"""
+        with pytest.raises(ValidationError):
+>           service.list_orders(min_total=-1)
+
+tests/test_order_filters.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fd1c140>, page = 1
+page_size = 10, status = None, min_total = -1
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+____________________ test_filters_combine_before_pagination ____________________
+
+service = <minimart.service.OrderService object at 0x79405fd1c8c0>
+
+    def test_filters_combine_before_pagination(service):
+        """@req REQ-001.3"""
+>       result = service.list_orders(status="paid", page=2, page_size=2)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_order_filters.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fd1c8c0>, page = 2
+page_size = 2, status = 'paid', min_total = None
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+________________________ test_filters_keep_stable_order ________________________
+
+service = <minimart.service.OrderService object at 0x79405fd1d1c0>
+
+    def test_filters_keep_stable_order(service):
+        """@req REQ-001.4"""
+>       result = service.list_orders(status="paid", min_total=3000)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_order_filters.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fd1d1c0>, page = 1
+page_size = 10, status = 'paid', min_total = 3000
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+____________________ test_filters_do_not_mutate_repository _____________________
+
+service = <minimart.service.OrderService object at 0x79405fd1d190>
+orders = [Order(order_id='O-1001', customer='alice', status='paid', total_cents=5000, created_at=datetime.datetime(2026, 10, 1,...id='O-1006', customer='frank', status='cancelled', total_cents=9000, created_at=datetime.datetime(2026, 10, 6, 10, 0))]
+
+    def test_filters_do_not_mutate_repository(service, orders):
+        """@req REQ-001.5"""
+        before = [order.order_id for order in service.list_orders()]
+>       service.list_orders(status="shipped", min_total=1000)
+
+tests/test_order_filters.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <minimart.service.OrderService object at 0x79405fd1d190>, page = 1
+page_size = 10, status = 'shipped', min_total = 1000
+
+    def list_orders(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        status: str | None = None,
+        min_total: int | None = None,
+    ) -> list[Order]:
+        """Return one page of orders, newest first.
+    
+        ``status`` and ``min_total`` filtering is requested by REQ-001 and is
+        not implemented yet: the parameters are accepted so callers can adopt
+        the documented signature before the behaviour lands.
+        """
+        self._validate_paging(page, page_size)
+        if status is not None or min_total is not None:
+            # TODO(REQ-001.1, REQ-001.2): filter by status and by the inclusive
+            # min_total bound.
+>           raise NotImplementedError(
+                "status/min_total filtering is not implemented yet (REQ-001)"
+            )
+E           NotImplementedError: status/min_total filtering is not implemented yet (REQ-001)
+
+src/minimart/service.py:39: NotImplementedError
+=========================== short test summary info ============================
+FAILED tests/test_order_filters.py::test_filter_by_status - NotImplementedErr...
+FAILED tests/test_order_filters.py::test_blank_status_is_ignored - NotImpleme...
+FAILED tests/test_order_filters.py::test_unknown_status_raises - NotImplement...
+FAILED tests/test_order_filters.py::test_min_total_is_inclusive - NotImplemen...
+FAILED tests/test_order_filters.py::test_min_total_zero_is_ignored - NotImple...
+FAILED tests/test_order_filters.py::test_negative_min_total_raises - NotImple...
+FAILED tests/test_order_filters.py::test_filters_combine_before_pagination - ...
+FAILED tests/test_order_filters.py::test_filters_keep_stable_order - NotImple...
+FAILED tests/test_order_filters.py::test_filters_do_not_mutate_repository - N...

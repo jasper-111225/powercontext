@@ -1,0 +1,15 @@
+{
+  "exit_codes": {
+    "before_target": 1,
+    "before_regression": 0,
+    "after_target": 0,
+    "after_regression": 0
+  },
+  "checks": {
+    "target tests fail before the change": true,
+    "regression tests pass before the change": true,
+    "target tests pass after the change": true,
+    "regression tests pass after the change": true
+  },
+  "result": "PASS"
+}
