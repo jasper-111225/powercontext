@@ -50,11 +50,11 @@ curl -fsSL https://obportal.s3.ap-southeast-1.amazonaws.com/download-center/open
 ```bash
 cd minimax
 
-# ① Python 环境（创建 .venv 并安装 pymysql/pytest）
-./scripts/setup_sddctx.sh
-
-# ② PowerContext CLI（只需一次；脚本会检查）
+# ① PowerContext CLI（只需一次；setup 脚本会检查）
 uv tool install "powercontext[cli,server]==1.4.0"
+
+# ② Python 环境（创建 .venv 并安装 pymysql/pytest）
+./scripts/setup_sddctx.sh
 
 # ③ 确认 seekdb 在线（题目环境已提供；也可用自己部署的实例）
 ./.venv/bin/python -m sddctx doctor
