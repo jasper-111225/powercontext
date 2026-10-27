@@ -249,6 +249,7 @@ from powercontext.builtin.runtime.recall_sufficiency import (
     build_recall_candidates,
     recall_effort,
 )
+from powercontext.builtin.runtime.source_lifecycle import SourceLifecycleApplication
 from powercontext.builtin.runtime.statistics import RelationalScopedStatistics, overview_selection
 from powercontext.builtin.scope import ScopeApplication, ScopeDescriptor, ScopeSelection
 from powercontext.builtin.scope.subject_sources import SubjectSourceService
@@ -949,7 +950,10 @@ class ScopedContextApplication:
         )
         memory_candidates = list(round_zero.memory)
         experience_candidates = list(round_zero.experience)
-        topic_memory_hits = round_zero.topic_memory.hits
+        inactive_topics = await self._runtime.lifecycle.for_scope(self.scope_id).inactive_topic_artifacts()
+        topic_memory_hits = tuple(
+            hit for hit in round_zero.topic_memory.hits if hit.artifact_ref.artifact_id not in inactive_topics
+        )
         profile_candidates: list[PreparedProfileCandidate] = []
         profiles = self._runtime.profiles
         if "profile" in families and profiles is not None:
@@ -2703,7 +2707,16 @@ class ScopedTopicMemoryApplication:
                         "unit": "topic-memory",
                     },
                 )
-        return result
+        return await self._filter_inactive_topics(result)
+
+    async def _filter_inactive_topics(self, result):
+        inactive = await self._runtime.lifecycle.for_scope(self.scope_id).inactive_topic_artifacts()
+        if not inactive:
+            return result
+        hits = tuple(hit for hit in result.hits if hit.artifact_ref.artifact_id not in inactive)
+        if len(hits) == len(result.hits):
+            return result
+        return result.model_copy(update={"hits": hits})
 
     async def _search_with_embedding(
         self,
@@ -3139,6 +3152,7 @@ class BuiltinRuntime:
         self.handoff = HandoffApplication(self)
         self.work = WorkApplication(self)
         self.memory = MemoryApplication(self)
+        self.lifecycle = SourceLifecycleApplication(self)
         self.topic_memory = TopicMemoryApplication(self)
         self.records = RecordApplication(self)
         self.prompts = PromptApplication(self)

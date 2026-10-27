@@ -178,6 +178,14 @@ SOURCES_TABLE = Table(
     UniqueConstraint("scope_id", "journal_position", name="uq_pc_sources_scope_journal_position"),
 )
 
+SOURCE_LIFECYCLE_TABLE = Table(
+    "pc_source_lifecycle",
+    SHARED_METADATA,
+    Column("scope_id", identity_string(MAX_SCOPE_ID_LENGTH), primary_key=True),
+    Column("payload", _canonical_payload_type(), nullable=False),
+    ForeignKeyConstraint(("scope_id",), ("pc_scopes.scope_id",), ondelete="RESTRICT"),
+)
+
 SOURCE_JOURNAL_HEADS_TABLE = Table(
     "pc_source_journal_heads",
     SHARED_METADATA,
@@ -896,6 +904,7 @@ RECALL_TOKEN_DAILY_TABLE = Table(
 )
 
 SHARED_TABLES = (
+    SOURCE_LIFECYCLE_TABLE,
     SOURCE_JOURNAL_HEADS_TABLE,
     SOURCES_TABLE,
     ARTIFACTS_TABLE,
