@@ -13,6 +13,7 @@ PROJECT="demo_project"
 NAME="minimart"
 TASK="为订单查询增加状态筛选与最低金额筛选：支持 status 与 min_total 参数，过滤后分页，保持创建时间倒序，并校验非法参数。"
 mkdir -p "$LOG"
+FRESH="${FRESH:-1}"
 
 step() { printf '\n=== %s ===\n' "$1"; }
 
@@ -21,12 +22,23 @@ run_suite() { # <project_dir> <test_path> <log_file>
   echo $?
 }
 
+if [[ "$FRESH" == "1" ]]; then
+  step "0.0 重置环境（seekdb 库 + PowerContext 数据）"
+  ./scripts/reset_environment.sh | tee "$LOG/00-reset.log"
+fi
+
 step "0. 检查 seekdb 与 PowerContext"
+{
+  echo "git commit: $(git -C "$MINIMAX_DIR" rev-parse HEAD)"
+  echo "python: $("$PY" -V)"
+  echo "powercontext: $(powercontext --version 2>/dev/null || echo unknown)"
+} | tee "$LOG/00-versions.log"
 "$PY" -m sddctx doctor | tee "$LOG/00-doctor.log"
 doctor_exit=${PIPESTATUS[0]}
 
 step "1. 启动 PowerContext Server"
 ./scripts/pc_server.sh start | tee "$LOG/01-powercontext-start.log"
+"$PY" -m sddctx state show --project "$PROJECT" --name "$NAME" | tee "$LOG/01-state-before.log"
 
 step "2. 导入规格/代码/测试到 seekdb"
 "$PY" -m sddctx import --project "$PROJECT" --name "$NAME" --reset | tee "$LOG/02-import.log"
@@ -86,7 +98,9 @@ target, regression, freshness, state_read = map(int, sys.argv[2:6])
 state = json.loads((log_dir / "07-state-after-restart.log").read_text())
 context = json.loads((log_dir / "08-context-after-restart.json").read_text())
 
+before_state = json.loads((log_dir / "01-state-before.log").read_text())
 checks = {
+    "starts from empty task state": before_state.get("count") == 0,
     "target tests pass": target == 0,
     "regression tests pass": regression == 0,
     "context carries saved state": bool(context.get("state")),

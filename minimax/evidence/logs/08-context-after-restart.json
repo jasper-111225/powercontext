@@ -1,0 +1,379 @@
+{
+  "task": "为订单查询增加状态筛选与最低金额筛选：支持 status 与 min_total 参数，过滤后分页，保持创建时间倒序，并校验非法参数。",
+  "project": "minimart",
+  "root": "/home/jasper/seekdb/source/powercontext/minimax/demo_project",
+  "generated_at": "2026-10-28T01:20:58+08:00",
+  "selection": {
+    "method": "seekdb full-text search over spec chunks, then REQ traceability join",
+    "mentioned_requirements": [],
+    "selected_requirements": [
+      "REQ-001.1",
+      "REQ-001.2",
+      "REQ-001.3"
+    ],
+    "new_requirements": [
+      "REQ-001",
+      "REQ-001.1",
+      "REQ-001.2",
+      "REQ-001.3",
+      "REQ-001.4",
+      "REQ-001.5",
+      "REQ-002"
+    ],
+    "spec_scores": [
+      {
+        "path": "specs/REQ-001-order-query.md",
+        "symbol": "REQ-001.2 金额下限（闭区间）",
+        "score": 7.6745
+      },
+      {
+        "path": "specs/REQ-001-order-query.md",
+        "symbol": "REQ-001.1 状态筛选",
+        "score": 7.2027
+      },
+      {
+        "path": "specs/REQ-001-order-query.md",
+        "symbol": "REQ-001.3 组合筛选与分页",
+        "score": 6.9949
+      }
+    ]
+  },
+  "specs": [
+    {
+      "req_ids": [
+        "REQ-001.2"
+      ],
+      "path": "specs/REQ-001-order-query.md",
+      "symbol": "REQ-001.2 金额下限（闭区间）",
+      "title": "REQ-001.2 金额下限（闭区间）",
+      "lines": [
+        13,
+        17
+      ],
+      "version": 1,
+      "change_kind": "new",
+      "score": 7.6745,
+      "excerpt": "## REQ-001.2 金额下限（闭区间）\n\n`list_orders(min_total=...)` 可选参数，单位为分（整数），表示订单金额下限，比较使用闭区间（`total_cents >= min_total`）。\n传入 `None` 或 `0` 表示不按金额筛选。传入负数必须抛出 `ValidationError`。\n"
+    },
+    {
+      "req_ids": [
+        "REQ-001.1"
+      ],
+      "path": "specs/REQ-001-order-query.md",
+      "symbol": "REQ-001.1 状态筛选",
+      "title": "REQ-001.1 状态筛选",
+      "lines": [
+        8,
+        12
+      ],
+      "version": 1,
+      "change_kind": "new",
+      "score": 7.2027,
+      "excerpt": "## REQ-001.1 状态筛选\n\n`list_orders(status=...)` 可选参数，用于按订单状态筛选。合法取值：`draft`、`paid`、`shipped`、`cancelled`。\n传入其他值必须抛出 `ValidationError`。传入 `None` 或仅含空白的字符串表示不按状态筛选。\n"
+    },
+    {
+      "req_ids": [
+        "REQ-001.3"
+      ],
+      "path": "specs/REQ-001-order-query.md",
+      "symbol": "REQ-001.3 组合筛选与分页",
+      "title": "REQ-001.3 组合筛选与分页",
+      "lines": [
+        18,
+        22
+      ],
+      "version": 1,
+      "change_kind": "new",
+      "score": 6.9949,
+      "excerpt": "## REQ-001.3 组合筛选与分页\n\n状态与金额可以同时生效，结果同时满足两个条件。筛选在分页之前执行：`page` 与 `page_size` 的分页语义与\nREQ-002.2 一致，第 1 页从筛选后的第一条记录开始。\n"
+    }
+  ],
+  "code": [
+    {
+      "path": "src/minimart/service.py",
+      "symbols": [
+        {
+          "name": "OrderService.list_orders",
+          "lines": [
+            21,
+            49
+          ],
+          "req_ids": [
+            "REQ-001.1",
+            "REQ-001.2",
+            "REQ-001.3"
+          ]
+        },
+        {
+          "name": "OrderService._sorted_orders",
+          "lines": [
+            59,
+            65
+          ],
+          "req_ids": [
+            "REQ-001.4"
+          ]
+        },
+        {
+          "name": "OrderService._normalize_status",
+          "lines": [
+            67,
+            81
+          ],
+          "req_ids": [
+            "REQ-001.1"
+          ]
+        },
+        {
+          "name": "OrderService._normalize_min_total",
+          "lines": [
+            83,
+            95
+          ],
+          "req_ids": [
+            "REQ-001.2"
+          ]
+        }
+      ],
+      "req_ids": [
+        "REQ-001.1",
+        "REQ-001.2",
+        "REQ-001.3",
+        "REQ-001.4"
+      ]
+    }
+  ],
+  "files_to_modify": [
+    "src/minimart/service.py"
+  ],
+  "tests": {
+    "target": [
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_filter_by_status",
+        "title": "@req REQ-001.1",
+        "lines": [
+          15,
+          18
+        ],
+        "req_ids": [
+          "REQ-001.1"
+        ]
+      },
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_blank_status_is_ignored",
+        "title": "@req REQ-001.1",
+        "lines": [
+          21,
+          24
+        ],
+        "req_ids": [
+          "REQ-001.1"
+        ]
+      },
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_unknown_status_raises",
+        "title": "@req REQ-001.1",
+        "lines": [
+          27,
+          30
+        ],
+        "req_ids": [
+          "REQ-001.1"
+        ]
+      },
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_min_total_is_inclusive",
+        "title": "@req REQ-001.2",
+        "lines": [
+          33,
+          41
+        ],
+        "req_ids": [
+          "REQ-001.2"
+        ]
+      },
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_min_total_zero_is_ignored",
+        "title": "@req REQ-001.2",
+        "lines": [
+          44,
+          46
+        ],
+        "req_ids": [
+          "REQ-001.2"
+        ]
+      },
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_negative_min_total_raises",
+        "title": "@req REQ-001.2",
+        "lines": [
+          49,
+          52
+        ],
+        "req_ids": [
+          "REQ-001.2"
+        ]
+      },
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_filters_combine_before_pagination",
+        "title": "@req REQ-001.3",
+        "lines": [
+          55,
+          58
+        ],
+        "req_ids": [
+          "REQ-001.3"
+        ]
+      },
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_filters_keep_stable_order",
+        "title": "@req REQ-001.4",
+        "lines": [
+          61,
+          64
+        ],
+        "req_ids": [
+          "REQ-001.4"
+        ]
+      },
+      {
+        "path": "tests/test_order_filters.py",
+        "symbol": "test_filters_do_not_mutate_repository",
+        "title": "@req REQ-001.5",
+        "lines": [
+          67,
+          73
+        ],
+        "req_ids": [
+          "REQ-001.5"
+        ]
+      }
+    ],
+    "regression": [
+      {
+        "path": "tests/test_service_regression.py",
+        "symbol": "test_lists_all_orders_newest_first",
+        "title": "@req REQ-002.1",
+        "lines": [
+          14,
+          24
+        ],
+        "req_ids": [
+          "REQ-002.1"
+        ]
+      },
+      {
+        "path": "tests/test_service_regression.py",
+        "symbol": "test_pagination_returns_requested_slice",
+        "title": "@req REQ-002.1",
+        "lines": [
+          27,
+          30
+        ],
+        "req_ids": [
+          "REQ-002.1"
+        ]
+      },
+      {
+        "path": "tests/test_service_regression.py",
+        "symbol": "test_page_beyond_last_is_empty",
+        "title": "@req REQ-002.1",
+        "lines": [
+          33,
+          35
+        ],
+        "req_ids": [
+          "REQ-002.1"
+        ]
+      },
+      {
+        "path": "tests/test_service_regression.py",
+        "symbol": "test_invalid_page_raises",
+        "title": "@req REQ-002.2",
+        "lines": [
+          38,
+          41
+        ],
+        "req_ids": [
+          "REQ-002.2"
+        ]
+      },
+      {
+        "path": "tests/test_service_regression.py",
+        "symbol": "test_invalid_page_size_raises",
+        "title": "@req REQ-002.2",
+        "lines": [
+          44,
+          47
+        ],
+        "req_ids": [
+          "REQ-002.2"
+        ]
+      },
+      {
+        "path": "tests/test_service_regression.py",
+        "symbol": "test_summary_counts_and_totals",
+        "title": "@req REQ-002.3",
+        "lines": [
+          50,
+          52
+        ],
+        "req_ids": [
+          "REQ-002.3"
+        ]
+      }
+    ]
+  },
+  "state": {
+    "task_id": "sdd-ea011b92",
+    "project": "minimart",
+    "stage": "verified",
+    "task": "为订单查询增加状态筛选与最低金额筛选：支持 status 与 min_total 参数，过滤后分页，保持创建时间倒序，并校验非法参数。",
+    "done": [
+      "导入规格/代码/测试到 seekdb",
+      "生成任务上下文并校验来源",
+      "用 MiniMax 完成 REQ-001 代码修改",
+      "目标测试与回归测试通过"
+    ],
+    "todo": [],
+    "verifications": [
+      {
+        "command": "pytest tests/test_order_filters.py",
+        "exit_code": 0,
+        "log": "evidence/logs/04-target-tests.log",
+        "at": "2026-10-28T01:20:48+08:00"
+      },
+      {
+        "command": "pytest tests/test_service_regression.py",
+        "exit_code": 0,
+        "log": "evidence/logs/04-regression-tests.log",
+        "at": "2026-10-28T01:20:48+08:00"
+      }
+    ],
+    "saved_at": "2026-10-28T01:20:48+08:00",
+    "requirements": [
+      "REQ-001.1",
+      "REQ-001.2",
+      "REQ-001.3"
+    ],
+    "files_to_modify": [
+      "src/minimart/service.py"
+    ],
+    "context_digest": "ea011b92367b99b4f82abecedc407d14386b01b6dc16358e8436c20aa7c3175e",
+    "scope_id": "scp_2hgx5nwna8xxcxg06aek9rkgdm",
+    "state_entry": {
+      "family": "atomic-memory",
+      "artifact_id": "art_12f23b0cb09848c19178e16bc67122f3",
+      "revision": 1
+    }
+  },
+  "sources_verified": true
+}

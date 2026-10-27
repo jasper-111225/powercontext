@@ -1,0 +1,80 @@
+{
+  "stamp": "20261028-011954",
+  "model": "MiniMax-M3",
+  "summary": "为订单查询实现状态与最低金额参数校验、组合筛选，并确保筛选后保持创建时间倒序再分页。",
+  "files": [
+    {
+      "path": "src/minimart/service.py",
+      "before_sha256": "b2d149a763831f6164955cf3188e242c2a3b898ebd26be363fe2e3f7695c0b4a",
+      "after_sha256": "e73d081f4699cdfffc675e5ade697d08519d3a3181ba7e6e5df87e4f9e68fa67",
+      "bytes": 3740,
+      "changed": true
+    }
+  ],
+  "specs": [
+    {
+      "path": "specs/REQ-001-order-query.md",
+      "lines": [
+        13,
+        17
+      ],
+      "req_ids": [
+        "REQ-001.2"
+      ]
+    },
+    {
+      "path": "specs/REQ-001-order-query.md",
+      "lines": [
+        8,
+        12
+      ],
+      "req_ids": [
+        "REQ-001.1"
+      ]
+    },
+    {
+      "path": "specs/REQ-001-order-query.md",
+      "lines": [
+        18,
+        22
+      ],
+      "req_ids": [
+        "REQ-001.3"
+      ]
+    }
+  ],
+  "tests_target": [
+    "test_filter_by_status",
+    "test_blank_status_is_ignored",
+    "test_unknown_status_raises",
+    "test_min_total_is_inclusive",
+    "test_min_total_zero_is_ignored",
+    "test_negative_min_total_raises",
+    "test_filters_combine_before_pagination",
+    "test_filters_keep_stable_order",
+    "test_filters_do_not_mutate_repository"
+  ],
+  "tests_regression": [
+    "test_lists_all_orders_newest_first",
+    "test_pagination_returns_requested_slice",
+    "test_page_beyond_last_is_empty",
+    "test_invalid_page_raises",
+    "test_invalid_page_size_raises",
+    "test_summary_counts_and_totals"
+  ],
+  "usage": {
+    "total_tokens": 6148,
+    "total_characters": 0,
+    "prompt_tokens": 2173,
+    "completion_tokens": 3975,
+    "completion_tokens_details": {
+      "reasoning_tokens": 2944
+    },
+    "prompt_tokens_details": {
+      "cached_tokens": 2172
+    }
+  },
+  "elapsed_seconds": 27.08,
+  "prompt_chars": 6844,
+  "applied_at": "2026-10-28T01:20:21+08:00"
+}

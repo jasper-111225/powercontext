@@ -1,0 +1,15 @@
+== before edit ==
+== edit spec: 30 days -> 90 days, version 1 -> 2, add a privacy clause ==
+spec updated
+== after edit (re-import) ==
+{
+  "before": {
+    "version": 1,
+    "rule": "## REQ-010.1 保留期限"
+  },
+  "after": {
+    "version": 2,
+    "rule": "## REQ-010.1 保留期限"
+  },
+  "result": "PASS: context follows the re-imported specification"
+}

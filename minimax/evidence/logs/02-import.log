@@ -1,0 +1,42 @@
+{
+  "project": "minimart",
+  "root": "/home/jasper/seekdb/source/powercontext/minimax/demo_project",
+  "documents": 10,
+  "chunks": 43,
+  "per_kind": {
+    "spec": 12,
+    "code": 16,
+    "test": 15
+  },
+  "requirements": [
+    "REQ-001",
+    "REQ-001.1",
+    "REQ-001.2",
+    "REQ-001.3",
+    "REQ-001.4",
+    "REQ-001.5",
+    "REQ-002",
+    "REQ-002.1",
+    "REQ-002.2",
+    "REQ-002.3"
+  ],
+  "fulltext": true,
+  "schema_notes": [],
+  "stats": [
+    {
+      "kind": "code",
+      "chunks": 16,
+      "documents": 4
+    },
+    {
+      "kind": "spec",
+      "chunks": 12,
+      "documents": 2
+    },
+    {
+      "kind": "test",
+      "chunks": 15,
+      "documents": 2
+    }
+  ]
+}

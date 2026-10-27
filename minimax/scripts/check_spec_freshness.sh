@@ -68,7 +68,12 @@ assert b["version"] == 1 and a["version"] == 2, (b["version"], a["version"])
 assert "手机号" in spec_text(after, "REQ-010.2")["excerpt"]
 
 def rule_line(spec):
-    return next(line for line in spec["excerpt"].splitlines() if "保留" in line or "编码" in line)
+    for line in spec["excerpt"].splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        if "天" in line or "UTF-8" in line:
+            return line.strip()
+    return spec["excerpt"].splitlines()[0]
 
 print(json.dumps({
     "before": {"version": b["version"], "rule": rule_line(b)},

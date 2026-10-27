@@ -1,0 +1,18 @@
+{
+  "checks": {
+    "target tests pass": true,
+    "regression tests pass": true,
+    "context carries saved state": true,
+    "state stage is verified": true,
+    "verification results restored": true,
+    "spec freshness check passes": true,
+    "state read after restart": true
+  },
+  "exit_codes": {
+    "target": 0,
+    "regression": 0,
+    "freshness": 0,
+    "state_read": 0
+  },
+  "result": "PASS"
+}

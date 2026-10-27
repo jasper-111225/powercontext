@@ -64,6 +64,7 @@ def main() -> int:
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--record-dir", default=str(MINIMAX_DIR / "evidence" / "minimax"))
     parser.add_argument("--key-file", default=str(MINIMAX_DIR / ".runtime" / "minimax.key"))
+    parser.add_argument("--max-tokens", type=int, default=16000)
     parser.add_argument("--extra-instructions", default="")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -107,7 +108,7 @@ def main() -> int:
     client = MiniMaxClient(_api_key(args), args.base_url, args.model)
     started = time.time()
     try:
-        result = client.chat(messages, temperature=0.2, max_tokens=8000)
+        result = client.chat(messages, temperature=0.2, max_tokens=args.max_tokens)
     except MiniMaxError as exc:
         failure = {"stamp": stamp, "error": str(exc),
                    "failed_at": dt.datetime.now().astimezone().isoformat(timespec="seconds")}

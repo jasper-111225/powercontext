@@ -2,7 +2,7 @@
   "task": "为订单查询增加状态筛选与最低金额筛选：支持 status 与 min_total 参数，过滤后分页，保持创建时间倒序，并校验非法参数。",
   "project": "minimart",
   "root": "/home/jasper/seekdb/source/powercontext/minimax/demo_project",
-  "generated_at": "2026-10-28T01:14:06+08:00",
+  "generated_at": "2026-10-28T01:20:46+08:00",
   "selection": {
     "method": "seekdb full-text search over spec chunks, then REQ traceability join",
     "mentioned_requirements": [],
@@ -24,17 +24,17 @@
       {
         "path": "specs/REQ-001-order-query.md",
         "symbol": "REQ-001.2 金额下限（闭区间）",
-        "score": 7.638
+        "score": 7.6745
       },
       {
         "path": "specs/REQ-001-order-query.md",
         "symbol": "REQ-001.1 状态筛选",
-        "score": 7.0635
+        "score": 7.2027
       },
       {
         "path": "specs/REQ-001-order-query.md",
         "symbol": "REQ-001.3 组合筛选与分页",
-        "score": 6.8209
+        "score": 6.9949
       }
     ]
   },
@@ -52,7 +52,7 @@
       ],
       "version": 1,
       "change_kind": "new",
-      "score": 7.638,
+      "score": 7.6745,
       "excerpt": "## REQ-001.2 金额下限（闭区间）\n\n`list_orders(min_total=...)` 可选参数，单位为分（整数），表示订单金额下限，比较使用闭区间（`total_cents >= min_total`）。\n传入 `None` 或 `0` 表示不按金额筛选。传入负数必须抛出 `ValidationError`。\n"
     },
     {
@@ -68,7 +68,7 @@
       ],
       "version": 1,
       "change_kind": "new",
-      "score": 7.0635,
+      "score": 7.2027,
       "excerpt": "## REQ-001.1 状态筛选\n\n`list_orders(status=...)` 可选参数，用于按订单状态筛选。合法取值：`draft`、`paid`、`shipped`、`cancelled`。\n传入其他值必须抛出 `ValidationError`。传入 `None` 或仅含空白的字符串表示不按状态筛选。\n"
     },
     {
@@ -84,7 +84,7 @@
       ],
       "version": 1,
       "change_kind": "new",
-      "score": 6.8209,
+      "score": 6.9949,
       "excerpt": "## REQ-001.3 组合筛选与分页\n\n状态与金额可以同时生效，结果同时满足两个条件。筛选在分页之前执行：`page` 与 `page_size` 的分页语义与\nREQ-002.2 一致，第 1 页从筛选后的第一条记录开始。\n"
     }
   ],
@@ -96,29 +96,49 @@
           "name": "OrderService.list_orders",
           "lines": [
             21,
-            45
+            49
           ],
           "req_ids": [
-            "REQ-001",
             "REQ-001.1",
-            "REQ-001.2"
+            "REQ-001.2",
+            "REQ-001.3"
           ]
         },
         {
           "name": "OrderService._sorted_orders",
           "lines": [
-            55,
-            61
+            59,
+            65
           ],
           "req_ids": [
             "REQ-001.4"
           ]
+        },
+        {
+          "name": "OrderService._normalize_status",
+          "lines": [
+            67,
+            81
+          ],
+          "req_ids": [
+            "REQ-001.1"
+          ]
+        },
+        {
+          "name": "OrderService._normalize_min_total",
+          "lines": [
+            83,
+            95
+          ],
+          "req_ids": [
+            "REQ-001.2"
+          ]
         }
       ],
       "req_ids": [
-        "REQ-001",
         "REQ-001.1",
         "REQ-001.2",
+        "REQ-001.3",
         "REQ-001.4"
       ]
     }
@@ -170,7 +190,7 @@
         "title": "@req REQ-001.2",
         "lines": [
           33,
-          36
+          41
         ],
         "req_ids": [
           "REQ-001.2"
@@ -181,8 +201,8 @@
         "symbol": "test_min_total_zero_is_ignored",
         "title": "@req REQ-001.2",
         "lines": [
-          39,
-          41
+          44,
+          46
         ],
         "req_ids": [
           "REQ-001.2"
@@ -193,8 +213,8 @@
         "symbol": "test_negative_min_total_raises",
         "title": "@req REQ-001.2",
         "lines": [
-          44,
-          47
+          49,
+          52
         ],
         "req_ids": [
           "REQ-001.2"
@@ -205,8 +225,8 @@
         "symbol": "test_filters_combine_before_pagination",
         "title": "@req REQ-001.3",
         "lines": [
-          50,
-          53
+          55,
+          58
         ],
         "req_ids": [
           "REQ-001.3"
@@ -217,8 +237,8 @@
         "symbol": "test_filters_keep_stable_order",
         "title": "@req REQ-001.4",
         "lines": [
-          56,
-          59
+          61,
+          64
         ],
         "req_ids": [
           "REQ-001.4"
@@ -229,8 +249,8 @@
         "symbol": "test_filters_do_not_mutate_repository",
         "title": "@req REQ-001.5",
         "lines": [
-          62,
-          68
+          67,
+          73
         ],
         "req_ids": [
           "REQ-001.5"
