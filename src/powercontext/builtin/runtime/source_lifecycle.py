@@ -66,6 +66,7 @@ class _Node(BaseModel):
     available: bool = True
     revision: int = 1
     sequence: int = 0
+    reason: str = ""
 
 
 class _State(BaseModel):
@@ -206,11 +207,14 @@ class ScopedSourceLifecycle:
         if event.sequence < node.sequence:
             raise SourceLifecycleError("event sequence regressed")  # noqa: TRY003
         if event.sequence == node.sequence:
-            if node.available == event.available:
-                return sorted(_active_ids(state))
-            raise SourceLifecycleError("event sequence was reused with a different state")  # noqa: TRY003
+            if node.available != event.available or node.reason != event.reason:
+                raise SourceLifecycleError("event sequence was reused with a different transition")  # noqa: TRY003
+            # A replay must finish any propagation a previous interrupted attempt left behind.
+            await self._sync_memory(state)
+            return sorted(_active_ids(state))
         node.available = event.available
         node.sequence = event.sequence
+        node.reason = event.reason
         _recompute(state)
         await self._save(state)
         await self._sync_memory(state)

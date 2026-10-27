@@ -24,7 +24,7 @@ from urllib.parse import quote
 from pydantic import BaseModel
 
 from powercontext.artifacts import MemoryCitation
-from powercontext.builtin.runtime import GetMemoryEntryRequest, SearchMemoryRequest
+from powercontext.builtin.runtime import SearchMemoryRequest
 from powercontext.limits import MAX_SOURCE_ID_LENGTH
 from powercontext.sources import TEXT_EVIDENCE_PROJECTION_KEY, AdapterSourceDefinition, SourceDefinition, TextEvidence
 from powercontext.sources.models import Source, SourceMaterialization
@@ -177,31 +177,70 @@ PDF_PAGE_SOURCE_DEFINITION: SourceDefinition[PDFPageInput, PDFPageSource, PDFPag
 )
 
 
+_STOPWORDS = frozenset(
+    {
+        "a", "an", "and", "are", "as", "at", "be", "by", "did", "do", "does", "for", "from", "has",
+        "have", "how", "in", "is", "it", "of", "on", "or", "that", "the", "their", "this", "to",
+        "was", "were", "what", "when", "where", "which", "who", "why", "with", "fy", "year",
+    }
+)
+_WORD_RE = re.compile(r"[0-9][0-9,.]*|[A-Za-z][A-Za-z0-9_.\-]*")
+
+
+def _salient_terms(question: str) -> tuple[str, ...]:
+    terms: list[str] = []
+    for match in _WORD_RE.finditer(question):
+        term = match.group(0).casefold().strip(".,")
+        if len(term) < 2 or term in _STOPWORDS:
+            continue
+        if term not in terms:
+            terms.append(term)
+    return tuple(terms)
+
+
+def _query_variants(question: str) -> tuple[tuple[str, float], ...]:
+    terms = _salient_terms(question)
+    variants: list[tuple[str, float]] = [(question, 2.0)]
+    if terms:
+        variants.append((" ".join(terms), 1.5))
+        for term in terms[:4]:
+            variants.append((term, 1.0))
+    seen: set[str] = set()
+    unique: list[tuple[str, float]] = []
+    for text, weight in variants:
+        key = text.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append((text, weight))
+    return tuple(unique)
+
+
 async def search_pdf_pages(memory, question: str, limit: int = 10) -> tuple[MemoryCitation, ...]:
     """Return up to ``limit`` exact citations, one per distinct evidence page."""
 
     if limit < 1:
         return ()
-    page = await memory.search(
-        SearchMemoryRequest(query=question, mode="fts", limit=min(max(limit * 3, limit), 100)),
-    )
-    citations: list[MemoryCitation] = []
-    seen_sources: set[str] = set()
-    for hit in page.hits:
-        citation = MemoryCitation(
-            memory_ref=hit.memory_ref,
-            entry_id=hit.entry_id,
-            entry_version_id=hit.entry_version_id,
-        )
-        entry = (await memory.get(GetMemoryEntryRequest(citation=citation))).entry
-        identities = tuple(reference.source_id for reference in entry.sources)
-        if not identities or any(identity in seen_sources for identity in identities):
-            continue
-        seen_sources.update(identities)
-        citations.append(citation)
-        if len(citations) >= limit:
-            break
-    return tuple(citations)
+    depth = min(max(limit * 4, 40), 100)
+    scores: dict[tuple[str, str], float] = {}
+    citations: dict[tuple[str, str], MemoryCitation] = {}
+    order: dict[tuple[str, str], int] = {}
+    for variant, weight in _query_variants(question):
+        page = await memory.search(SearchMemoryRequest(query=variant, mode="fts", limit=depth))
+        for rank, hit in enumerate(page.hits, start=1):
+            key = (hit.memory_ref.artifact_id, hit.entry_id)
+            scores[key] = scores.get(key, 0.0) + weight / (60.0 + rank)
+            if key not in citations:
+                citations[key] = MemoryCitation(
+                    memory_ref=hit.memory_ref,
+                    entry_id=hit.entry_id,
+                    entry_version_id=hit.entry_version_id,
+                )
+                order[key] = len(order)
+    if not scores:
+        return ()
+    ranked = sorted(scores, key=lambda key: (-scores[key], order[key]))[:limit]
+    return tuple(citations[key] for key in ranked)
 
 
 __all__ = [

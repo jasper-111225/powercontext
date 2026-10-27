@@ -729,7 +729,9 @@ class RemoteIngestionApplication:
 
     async def submit(self, request: SubmitSourceObservation, /) -> SourceReceipt:
         async with self._runtime._scope_operation(request.scope_id):
-            return await self._require_service().submit_source_observation(request)
+            receipt = await self._require_service().submit_source_observation(request)
+        self._runtime._arm_count_trigger(request.scope_id)
+        return receipt
 
     async def commit(self, request: CommitConnectorCheckpoint, /) -> ConnectorCheckpointState:
         async with self._runtime._scope_operation(request.binding.scope_id):
