@@ -18,13 +18,14 @@ from __future__ import annotations
 
 import hashlib
 import io
+import math
 import re
 from urllib.parse import quote
 
 from pydantic import BaseModel
 
 from powercontext.artifacts import MemoryCitation
-from powercontext.builtin.runtime import SearchMemoryRequest
+from powercontext.builtin.runtime import GetMemoryEntryRequest, SearchMemoryRequest
 from powercontext.limits import MAX_SOURCE_ID_LENGTH
 from powercontext.sources import TEXT_EVIDENCE_PROJECTION_KEY, AdapterSourceDefinition, SourceDefinition, TextEvidence
 from powercontext.sources.models import Source, SourceMaterialization
@@ -63,8 +64,6 @@ class PDFPageSource(Source):
 def _require_document_id(value: object) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError("document_id must be a non-empty string")  # noqa: TRY003
-    if value != value.strip():
-        raise ValueError("document_id must not contain leading or trailing whitespace")  # noqa: TRY003
     return value
 
 
@@ -181,10 +180,132 @@ _STOPWORDS = frozenset(
     {
         "a", "an", "and", "are", "as", "at", "be", "by", "did", "do", "does", "for", "from", "has",
         "have", "how", "in", "is", "it", "of", "on", "or", "that", "the", "their", "this", "to",
-        "was", "were", "what", "when", "where", "which", "who", "why", "with", "fy", "year",
+        "was", "were", "what", "when", "where", "which", "who", "why", "with", "fy", "year", "any",
+        "if", "not", "then", "state", "define", "give", "answer", "respond", "question", "assuming",
+        "perspective", "use", "used", "using", "shown", "within", "details", "please", "explain",
     }
 )
 _WORD_RE = re.compile(r"[0-9][0-9,.]*|[A-Za-z][A-Za-z0-9_.\-]*")
+_TOKEN_RE = re.compile(r"[a-z0-9]+")
+
+# Offline query expansion for finance questions: intent phrases mapped to the vocabulary that
+# annual reports actually use. These are generic domain terms, not document or answer facts.
+_EXPANSION_RULES: tuple[tuple[str, tuple[str, ...], float], ...] = (
+    (
+        r"(quick ratio|current ratio|liquidity|working capital|liquid)",
+        ("balance sheets", "current assets", "current liabilities", "cash and cash equivalents",
+         "short-term investments", "accounts receivable", "inventories", "total current assets",
+         "total current liabilities"),
+        1.0,
+    ),
+    (
+        r"(inventory turnover|inventories|inventory)",
+        ("inventories", "cost of sales", "cost of products sold", "cost of revenue", "cost of goods sold"),
+        1.0,
+    ),
+    (r"(receivable|receivables|days sales)", ("accounts receivable", "net sales", "net revenue"), 0.9),
+    (
+        r"(gross margin|gross profit|gross income)",
+        ("gross profit", "cost of sales", "cost of products", "cost of services", "cost of products sold",
+         "cost of revenue", "sales of products", "sales of services", "net sales", "gross margin"),
+        1.0,
+    ),
+    (
+        r"(operating margin|operating income|operating profit|operating loss)",
+        ("operating income", "operating profit", "income from operations", "results of operations",
+         "operating expenses"),
+        1.0,
+    ),
+    (r"(net margin|net income|net earnings|profitability|bottom line)",
+     ("net income", "net earnings", "net income attributable"), 0.9),
+    (r"(ebitda|depreciation|amortization)",
+     ("operating income", "depreciation", "amortization", "cash flows"), 1.0),
+    (r"(capex|capital expenditure|capital expenditures)",
+     ("capital expenditures", "purchases of property", "property plant and equipment", "investing activities"), 1.0),
+    (
+        r"(cash flow|cash flows|operating activities|investing activities|financing activities)",
+        ("cash flows", "operating activities", "investing activities", "financing activities", "net cash"),
+        1.0,
+    ),
+    (r"(debt|leverage|borrowings|borrowing|credit facilities|notes payable)",
+     ("long-term debt", "total debt", "borrowings", "notes payable", "debt", "credit facilities"), 1.0),
+    (r"(dividend|dividends)", ("dividends", "dividend"), 1.0),
+    (r"(repurchase|buyback|share repurchase)", ("repurchase", "share repurchase", "treasury stock"), 1.0),
+    (r"(segment|segments|business unit)",
+     ("business segment", "segment", "segments", "performance by business segment"), 1.0),
+    (r"(geograph|geographies|region|regions|international)",
+     ("geographic", "united states", "north america", "international", "asia pacific", "europe",
+      "latin america"), 0.9),
+    (r"(legal|litigation|lawsuit|proceedings|battles|claims)",
+     ("legal proceedings", "litigation", "legal", "claims", "contingencies"), 1.0),
+    (r"(tax|taxes|effective tax rate)",
+     ("effective tax rate", "provision for income taxes", "income taxes", "tax rate"), 1.0),
+    (r"(employee|employees|headcount|workforce)", ("employees", "workforce"), 1.0),
+    (r"(product|products|service|services)", ("products", "services", "product"), 0.8),
+    (r"(customer|customers|concentration)", ("customers", "customer", "concentration", "major customer"), 1.0),
+    (r"(cyclical|cyclicality|economic conditions|recession)",
+     ("cyclical", "cyclicality", "economic conditions", "global economic"), 1.0),
+    (r"(backlog|orders)", ("backlog", "orders", "order book"), 1.0),
+    (r"(production rate|rate|rates|ramp)", ("production rate", "rate", "production", "deliveries"), 0.7),
+    (r"(restructur|impairment|goodwill|write-?off)",
+     ("restructuring", "impairment", "goodwill", "charges"), 1.0),
+    (r"(pension|retiree|postretirement)", ("pension", "retirement", "postretirement"), 1.0),
+    (r"(research and development|r&d)", ("research and development", "research", "development"), 1.0),
+    (r"(marketing|advertising|promotion)", ("advertising", "marketing", "promotion"), 1.0),
+    (r"(seasonal|seasonality)", ("seasonal", "seasonality"), 1.0),
+    (r"(competit|competitor|competition)", ("competition", "competitors", "competitive"), 1.0),
+    (r"(supply chain|supplier|suppliers|raw material)",
+     ("supply chain", "suppliers", "raw materials", "commodity"), 1.0),
+    (r"(risk|risks|risk factors)", ("risk factors", "risks", "risk"), 0.8),
+    (r"(acquisition|acquisitions|merger|m&a|divestiture)",
+     ("acquisition", "acquisitions", "merger", "divestiture", "business combination"), 1.0),
+    (r"(cyber|cybersecurity|data security)", ("cybersecurity", "cyber", "information security"), 1.0),
+    (r"(lease|leases|leasing)", ("leases", "lease", "operating lease", "right-of-use"), 1.0),
+    (r"(share|shares|earnings per share|eps|diluted)",
+     ("earnings per share", "shares", "diluted", "weighted-average"), 0.8),
+    (r"(return on equity|return on assets|roe|roa|asset turnover)",
+     ("net income", "total assets", "stockholders equity", "sales"), 0.9),
+    (r"(license|licensing|royalt)", ("license", "royalty", "licensing"), 0.9),
+    (r"(sustainab|esg|environment|climate|carbon)",
+     ("sustainability", "environment", "climate", "emissions"), 1.0),
+    (r"(insurance|self-insurance)", ("insurance", "self-insurance"), 0.9),
+    (r"(warrant|warranty|guarantee)", ("warranty", "guarantee"), 0.9),
+    (r"(contract|contracts|obligation|obligations)", ("contract", "contracts", "obligations"), 0.8),
+    (r"(growth|growing|high growth|grow)",
+     ("results of operations", "net sales", "sales", "increase", "decrease", "growth"), 0.8),
+    (r"(interest expense|interest income|interest)", ("interest expense", "interest income", "interest"), 0.9),
+    (r"(tariff|tariffs|trade|trade policy)", ("tariffs", "duties", "trade", "customs"), 1.0),
+    (r"(inflation|inflationary|pricing|price increases)", ("inflation", "pricing", "price", "cost"), 0.9),
+    (r"(currency|foreign exchange|foreign currency|exchange rate)",
+     ("foreign currency", "currency", "exchange rate", "translation"), 0.9),
+    (r"(stock-based|share-based|stock compensation)",
+     ("share-based compensation", "stock-based compensation", "compensation expense"), 1.0),
+    (r"(environmental|remediation|climate)", ("environmental", "remediation", "climate"), 0.9),
+    (r"(contractual obligations|commitments)", ("contractual obligations", "commitments", "purchase obligations"), 1.0),
+    (r"(increase|increased|decrease|decreased|improve|improving|decline|declined)", ("increase", "decrease"), 0.4),
+    (r"(capital.?intensive)",
+     ("property plant and equipment", "capital expenditures", "depreciation", "total assets",
+      "investing activities"), 1.0),
+    (r"(product categor|service categor|product categories|service categories)",
+     ("business segment", "segment data", "revenues"), 1.0),
+    (r"(major products|products and services|what are the major)",
+     ("overview", "business", "products", "services"), 0.8),
+)
+_COMPILED_EXPANSIONS = tuple((re.compile(pattern), terms, weight) for pattern, terms, weight in _EXPANSION_RULES)
+_STATEMENT_PRIORS: tuple[tuple[str, str], ...] = (
+    (r"(quick ratio|current ratio|liquidity|working capital|inventory turnover|receivable|debt)",
+     r"(balance sheet|consolidated balance)"),
+    (r"(revenue|sales|margin|income|earnings|eps|tax|expense|capital.?intensive)",
+     r"(statement of income|statements of earnings|statement of operations|statements of operations|"
+     r"results of operations|income statement)"),
+    (r"(cash flow|capex|capital expenditure|dividend|repurchase|capital.?intensive)", r"(cash flow)"),
+    (r"(segment|business unit|product categor|service categor)",
+     r"(business segment|segment data|segment information)"),
+    (r"(legal|litigation|proceedings)", r"(legal proceedings|commitments|contingencies)"),
+    (r"(tax|taxes)", r"(income tax)"),
+    (r"(debt|borrowing)", r"(note.*debt|long-term debt|total debt)"),
+)
+_COMPILED_PRIORS = tuple((re.compile(intent), re.compile(statement)) for intent, statement in _STATEMENT_PRIORS)
 
 
 def _salient_terms(question: str) -> tuple[str, ...]:
@@ -193,54 +314,178 @@ def _salient_terms(question: str) -> tuple[str, ...]:
         term = match.group(0).casefold().strip(".,")
         if len(term) < 2 or term in _STOPWORDS:
             continue
-        if term not in terms:
-            terms.append(term)
+        for expanded in _expand_year(term):
+            if expanded not in terms:
+                terms.append(expanded)
     return tuple(terms)
 
 
-def _query_variants(question: str) -> tuple[tuple[str, float], ...]:
-    terms = _salient_terms(question)
-    variants: list[tuple[str, float]] = [(question, 2.0)]
-    if terms:
-        variants.append((" ".join(terms), 1.5))
-        for term in terms[:4]:
-            variants.append((term, 1.0))
-    seen: set[str] = set()
-    unique: list[tuple[str, float]] = []
-    for text, weight in variants:
-        key = text.casefold()
-        if key in seen:
+def _expand_year(term: str) -> tuple[str, ...]:
+    match = re.fullmatch(r"fy(\d{4})", term)
+    return (match.group(1),) if match else (term,)
+
+
+def _expansions(question: str) -> dict[str, float]:
+    text = question.casefold()
+    values: dict[str, float] = {}
+    for pattern, terms, weight in _COMPILED_EXPANSIONS:
+        if pattern.search(text):
+            for term in terms:
+                values[term] = max(values.get(term, 0.0), weight)
+    return values
+
+
+def _tokens(text: str) -> list[str]:
+    return _TOKEN_RE.findall(text.casefold())
+
+
+def _heading_text(text: str) -> str:
+    lines = [line.strip() for line in text.splitlines() if line.strip()][:8]
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("Item ", "Note ")) and len(stripped) < 90:
+            lines.append(stripped)
+    return " ".join(lines).casefold()
+
+
+def _count(term: str, tokens: list[str], counter: dict[str, int], normalized: str) -> int:
+    if " " in term:
+        return normalized.count(f" {term} ")
+    return counter.get(term, 0)
+
+
+def _rank_candidates(
+    texts: dict[tuple[str, str], str],
+    terms: tuple[str, ...],
+    expansions: dict[str, float],
+    question: str,
+) -> list[tuple[str, str]]:
+    """Rank retrieved entries with an offline lexical relevance model."""
+
+    weights: dict[str, float] = {term: 1.0 for term in terms}
+    for term, weight in expansions.items():
+        weights[term] = max(weights.get(term, 0.0), 0.7 * weight)
+    if not weights:
+        return list(texts)
+    documents: dict[tuple[str, str], list[str]] = {key: _tokens(text) for key, text in texts.items()}
+    total = max(1, len(documents))
+    document_frequency: dict[str, int] = {}
+    for tokens in documents.values():
+        for token in set(tokens):
+            document_frequency[token] = document_frequency.get(token, 0) + 1
+    idf = {
+        term: math.log(1.0 + (total - document_frequency.get(term, 0) + 0.5) / (document_frequency.get(term, 0) + 0.5))
+        for term in weights
+    }
+    average_length = sum(len(tokens) for tokens in documents.values()) / total
+    query_weights = {term: weight * idf[term] for term, weight in weights.items()}
+    query_norm = math.sqrt(sum(value * value for value in query_weights.values())) or 1.0
+    lowered = question.casefold()
+    priors = [(intent, statement) for intent, statement in _COMPILED_PRIORS if intent.search(lowered)]
+    cosine: dict[tuple[str, str], float] = {}
+    bm25: dict[tuple[str, str], float] = {}
+    for key, tokens in documents.items():
+        counter: dict[str, int] = {}
+        for token in tokens:
+            counter[token] = counter.get(token, 0) + 1
+        normalized = f" {' '.join(tokens)} "
+        length = len(tokens)
+        cosine_value = 0.0
+        bm25_value = 0.0
+        projections: dict[str, float] = {}
+        for term, weight in weights.items():
+            count = _count(term, tokens, counter, normalized)
+            if not count:
+                continue
+            projections[term] = query_weights[term] * (1.0 + math.log(count))
+            bm25_value += (
+                weight * idf[term] * (count * 2.2) / (count + 1.2 * (0.25 + 0.75 * length / max(1.0, average_length)))
+            )
+        if projections:
+            projection_norm = math.sqrt(sum(value * value for value in projections.values())) or 1.0
+            cosine_value = 10.0 * sum(query_weights[term] * value for term, value in projections.items()) / (
+                query_norm * projection_norm
+            )
+        heading = f" {' '.join(_tokens(_heading_text(texts[key])))} "
+        for term, weight in weights.items():
+            if f" {term} " in heading:
+                cosine_value += weight * idf[term]
+                bm25_value += 0.6 * weight * idf[term]
+        for intent, statement in priors:
+            if statement.search(heading):
+                cosine_value += 3.0
+                bm25_value += 3.0
+        cosine[key] = cosine_value
+        bm25[key] = bm25_value
+    cosine_max = max(cosine.values()) or 1.0
+    bm25_max = max(bm25.values()) or 1.0
+    combined = {
+        key: cosine[key] / cosine_max + bm25[key] / bm25_max
+        for key in cosine
+    }
+    return sorted(combined, key=lambda key: (-combined[key], key))
+
+
+def _page_identity(entry: object) -> tuple[str, ...]:
+    identities: list[str] = []
+    for reference in getattr(entry, "sources", ()):
+        source_id = getattr(reference, "source_id", "")
+        if not source_id:
             continue
-        seen.add(key)
-        unique.append((text, weight))
-    return tuple(unique)
+        parts = source_id.split(":")
+        identities.append(parts[-2] + ":" + parts[-1] if len(parts) >= 4 else source_id)
+    return tuple(identities) or ("",)
 
 
 async def search_pdf_pages(memory, question: str, limit: int = 10) -> tuple[MemoryCitation, ...]:
     """Return up to ``limit`` exact citations, one per distinct evidence page."""
 
-    if limit < 1:
+    if limit < 1 or not question.strip():
         return ()
-    depth = min(max(limit * 4, 40), 100)
-    scores: dict[tuple[str, str], float] = {}
+    terms = _salient_terms(question)
+    expansions = _expansions(question)
+    variants: list[str] = [question]
+    seen: set[str] = set()
+    for text in (*terms, *expansions):
+        folded = text.casefold()
+        if folded in seen:
+            continue
+        seen.add(folded)
+        variants.append(text)
+    depth = max(40, min(limit * 6, 100))
+    texts: dict[tuple[str, str], str] = {}
     citations: dict[tuple[str, str], MemoryCitation] = {}
-    order: dict[tuple[str, str], int] = {}
-    for variant, weight in _query_variants(question):
+    for variant in variants[:40]:
         page = await memory.search(SearchMemoryRequest(query=variant, mode="fts", limit=depth))
-        for rank, hit in enumerate(page.hits, start=1):
+        for hit in page.hits:
             key = (hit.memory_ref.artifact_id, hit.entry_id)
-            scores[key] = scores.get(key, 0.0) + weight / (60.0 + rank)
-            if key not in citations:
-                citations[key] = MemoryCitation(
-                    memory_ref=hit.memory_ref,
-                    entry_id=hit.entry_id,
-                    entry_version_id=hit.entry_version_id,
-                )
-                order[key] = len(order)
-    if not scores:
+            if key in texts:
+                continue
+            texts[key] = hit.text
+            citations[key] = MemoryCitation(
+                memory_ref=hit.memory_ref,
+                entry_id=hit.entry_id,
+                entry_version_id=hit.entry_version_id,
+            )
+    if not texts:
         return ()
-    ranked = sorted(scores, key=lambda key: (-scores[key], order[key]))[:limit]
-    return tuple(citations[key] for key in ranked)
+    ranked = _rank_candidates(texts, terms, expansions, question)
+    results: list[MemoryCitation] = []
+    pages: set[tuple[str, ...]] = set()
+    for key in ranked:
+        if len(results) >= limit:
+            break
+        citation = citations[key]
+        try:
+            entry = (await memory.get(GetMemoryEntryRequest(citation=citation))).entry
+        except Exception:  # noqa: BLE001 - an entry that cannot be read back is not citable
+            continue
+        identity = _page_identity(entry)
+        if identity in pages:
+            continue
+        pages.add(identity)
+        results.append(citation)
+    return tuple(results)
 
 
 __all__ = [

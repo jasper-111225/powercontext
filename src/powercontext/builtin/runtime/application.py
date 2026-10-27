@@ -3127,6 +3127,7 @@ class BuiltinRuntime:
         self.memory_source_count_threshold = memory_source_count_threshold
         self.topic_memory_source_count_threshold = topic_memory_source_count_threshold
         self._count_trigger_tasks: set[asyncio.Task[None]] = set()
+        self._count_trigger_locks: dict[str, asyncio.Lock] = {}
         self._resume_count_task: asyncio.Task[None] | None = None
         self.context_assembly_max_entries = context_assembly_max_entries
         self.recall_sufficiency_policy = recall_sufficiency_policy
@@ -3204,9 +3205,11 @@ class BuiltinRuntime:
         task.add_done_callback(self._count_trigger_tasks.discard)
 
     async def _run_count_trigger(self, scope_id: str) -> None:
+        lock = self._count_trigger_locks.setdefault(scope_id, asyncio.Lock())
         try:
-            await self._trigger_memory_window(scope_id)
-            await self._trigger_topic_window(scope_id)
+            async with lock:
+                await self._trigger_memory_window(scope_id)
+                await self._trigger_topic_window(scope_id)
         except Exception as error:
             log_safely(
                 logger,
@@ -3231,14 +3234,18 @@ class BuiltinRuntime:
         threshold = self.memory_source_count_threshold
         if threshold is None:
             return
-        previous: int | None = None
         while True:
             pending = await self._pending_memory_sources(scope_id)
-            if pending < threshold or pending == previous:
+            if pending < threshold:
                 return
-            previous = pending
-            result = await self.memory.for_scope(scope_id).flush(limit=self.source_window_limit)
+            application = self.memory.for_scope(scope_id)
+            result = await application.flush(limit=self.source_window_limit)
             if not result.processed or result.source_count <= 0:
+                return
+            # Stop only when the successful window did not advance the cursor; a count that
+            # happens to repeat (for example four pending with a threshold of three) must
+            # re-judge the remaining input instead of silently parking it.
+            if result.current_cursor <= result.previous_cursor:
                 return
 
     async def _pending_topic_memory_sources(self, scope_id: str) -> int:
