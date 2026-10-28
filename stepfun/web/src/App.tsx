@@ -233,10 +233,11 @@ export default function App() {
     setKbs(nextKbs);
     const wanted = selectId ?? kbIdRef.current;
     const nextId = nextKbs.find((kb) => kb.id === wanted)?.id ?? nextKbs[0]?.id ?? "";
-    if (nextId && nextId !== kbIdRef.current) {
+    if (nextId !== kbIdRef.current) {
       kbIdRef.current = nextId;
       setKbId(nextId);
-      localStorage.setItem("sfkb.kb", nextId);
+      if (nextId) localStorage.setItem("sfkb.kb", nextId);
+      else localStorage.removeItem("sfkb.kb");
     }
     return nextKbs;
   }, []);
