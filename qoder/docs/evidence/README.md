@@ -9,8 +9,8 @@
 | `logs/task-03-hybrid.sql` / `.out` | 手工验收命令 | seekdb 1.4 的 `SHOW CREATE TABLE chunks` 与向量/全文/RRF 检索原始输出 |
 | `logs/task-03-seekdb-sql.md` | 手工记录 | 任务 03 截图的环境、查询向量来源、复现步骤与一致性核对 |
 | `logs/task-06-memory-restart.md` | 手工记录 | 任务 06 验收：`pc_server.sh restart` 前后 `/api/memory` 快照一致（topic 与 33 条 entries 保留） |
-| `eval.json` / `eval.md` | `scripts/eval.py` | 已收录（2026-10-28 20:37，9 篇 / 138 片段，23 题） |
-| `screens/*.png` | 人工截图 | `qoder-01.png` 至 `qoder-08.png`、补充图 `qoder-02-output.png`、`qoder-03-output.png`、`qoder-06-home.png`、`qoder-08-output.png`，以及页面实拍 `home` / `answer` / `library` / `memory` / `eval` 与终端输出 `verify` 已收录；其余见 [`screens/README.md`](screens/README.md) |
+| `eval.json` / `eval.md` | `scripts/eval.py` | 已收录（2026-10-28 22:52，9 篇 / 138 片段，23 题；Recall@5 95% · p50 209 ms） |
+| `screens/*.png` | 人工截图 | `qoder-01.png` 至 `qoder-08.png`（07 为验收终端）、补充图 `qoder-02-output.png`、`qoder-03-output.png`、`qoder-06-home.png`、`qoder-08-output.png`，以及页面实拍 `home` / `answer` / `library` / `memory` / `eval` 与终端输出 `verify` 已收录；其余见 [`screens/README.md`](screens/README.md) |
 
 ## 关于片段数 135 与 138
 
