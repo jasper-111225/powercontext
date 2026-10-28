@@ -160,7 +160,7 @@ class FakePipeline:
 
 @pytest.fixture()
 def client(tmp_path: Path) -> TestClient:
-    settings = Settings(root=tmp_path)
+    settings = Settings(root=tmp_path, llm_enabled=True)
     app = create_app(
         settings,
         db=FakeDB(),
@@ -194,7 +194,7 @@ def test_ask_returns_citation_tied_to_chunk(client: TestClient) -> None:
 
 
 def test_ask_rejects_out_of_corpus_entity(tmp_path: Path) -> None:
-    settings = Settings(root=tmp_path)
+    settings = Settings(root=tmp_path, llm_enabled=True)
     app = create_app(
         settings,
         db=FakeDB(contains=False),
@@ -209,7 +209,7 @@ def test_ask_rejects_out_of_corpus_entity(tmp_path: Path) -> None:
 
 
 def test_ask_falls_back_when_embedding_fails(tmp_path: Path) -> None:
-    settings = Settings(root=tmp_path)
+    settings = Settings(root=tmp_path, llm_enabled=True)
     app = create_app(
         settings,
         db=FakeDB(),
@@ -224,7 +224,7 @@ def test_ask_falls_back_when_embedding_fails(tmp_path: Path) -> None:
 
 
 def test_ask_503_when_db_down(tmp_path: Path) -> None:
-    settings = Settings(root=tmp_path)
+    settings = Settings(root=tmp_path, llm_enabled=True)
     app = create_app(
         settings,
         db=FakeDB(fail=True),

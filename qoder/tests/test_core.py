@@ -150,7 +150,7 @@ class _BrokenLLM:
 
 
 def test_empty_corpus_refuses():
-    settings = Settings(root=ROOT)
+    settings = Settings(root=ROOT, llm_enabled=True)
     answer = answer_question(
         "Release 的产物在哪里？",
         [],
@@ -165,7 +165,7 @@ def test_empty_corpus_refuses():
 
 
 def test_low_similarity_and_coverage_refuses():
-    settings = Settings(root=ROOT)
+    settings = Settings(root=ROOT, llm_enabled=True)
     rows = [
         {
             "id": 1,
@@ -197,7 +197,7 @@ def test_low_similarity_and_coverage_refuses():
 
 
 def test_missing_latin_entity_refuses_even_with_similar_chunks():
-    settings = Settings(root=ROOT)
+    settings = Settings(root=ROOT, llm_enabled=True)
     rows = _evidence()
     answer = answer_question(
         "seekdb 支持 MongoDB 协议吗？",
@@ -214,7 +214,7 @@ def test_missing_latin_entity_refuses_even_with_similar_chunks():
 
 
 def test_llm_answer_with_valid_citation_is_kept():
-    settings = Settings(root=ROOT)
+    settings = Settings(root=ROOT, llm_enabled=True)
     rows = _evidence()
     llm = _FixedLLM("编译产物位于 build_release/src/observer/seekdb [1]。")
     answer = answer_question(
@@ -233,7 +233,7 @@ def test_llm_answer_with_valid_citation_is_kept():
 
 
 def test_llm_without_valid_citation_falls_back_to_extractive():
-    settings = Settings(root=ROOT)
+    settings = Settings(root=ROOT, llm_enabled=True)
     rows = _evidence()
     answer = answer_question(
         "Release 模式的编译产物在哪个目录？",
@@ -250,7 +250,7 @@ def test_llm_without_valid_citation_falls_back_to_extractive():
 
 
 def test_llm_out_of_range_citation_is_cleaned_and_falls_back():
-    settings = Settings(root=ROOT)
+    settings = Settings(root=ROOT, llm_enabled=True)
     rows = _evidence()
     answer = answer_question(
         "Release 模式的编译产物在哪个目录？",
@@ -266,7 +266,7 @@ def test_llm_out_of_range_citation_is_cleaned_and_falls_back():
 
 
 def test_llm_error_falls_back_to_extractive():
-    settings = Settings(root=ROOT)
+    settings = Settings(root=ROOT, llm_enabled=True)
     rows = _evidence()
     answer = answer_question(
         "Release 模式的编译产物在哪个目录？",
@@ -283,7 +283,7 @@ def test_llm_error_falls_back_to_extractive():
 
 
 def test_extractive_joins_code_fence_to_colon_line():
-    settings = Settings(root=ROOT)
+    settings = Settings(root=ROOT, llm_enabled=True)
     rows = _evidence()
     result = _extractive("Release 模式的编译产物在哪个目录？", rows, "测试")
     assert "build_release/src/observer/seekdb" in result["answer"]
@@ -328,3 +328,8 @@ def test_gold_set_shape():
     assert sum(1 for item in questions if not item["answerable"]) == 3
     assert len({item["id"] for item in questions}) == 23
     assert all(item["keywords"] for item in questions)
+
+
+def test_default_settings_disable_llm():
+    """默认走抽取式，避免本地 0.5B 生成把问答拖到超时。"""
+    assert Settings(root=ROOT).llm_enabled is False

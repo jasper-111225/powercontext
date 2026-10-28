@@ -47,12 +47,15 @@ is_running() {
 }
 
 health() {
-  ROOT="$ROOT" URL="$URL" "${PYTHON_BIN:-python3}" - <<'PY' >/dev/null 2>&1
+  ROOT="$ROOT" URL="$URL" TOKEN="${JUDIAN_POWERCONTEXT_TOKEN:-judian-local-token}" \
+    "${PYTHON_BIN:-python3}" - <<'PY' >/dev/null 2>&1
 import os, urllib.request
 url = os.environ["URL"].rstrip("/")
-for path in ("/v1/health", "/health", "/v1/scopes"):
+headers = {"Authorization": "Bearer " + os.environ.get("TOKEN", "")}
+for path in ("/health/ready", "/health", "/v1/health"):
     try:
-        with urllib.request.urlopen(url + path, timeout=2) as response:
+        request = urllib.request.Request(url + path, headers=headers)
+        with urllib.request.urlopen(request, timeout=2) as response:
             if response.status < 500:
                 raise SystemExit(0)
     except Exception:
@@ -76,6 +79,10 @@ export PYTHON_BIN
 start() {
   if is_running; then
     echo "PowerContext 已在运行（pid $(cat "$PID_FILE")，$URL）"
+    return 0
+  fi
+  if health; then
+    echo "PowerContext 已在运行（外部进程，$URL）"
     return 0
   fi
   local bin
@@ -147,6 +154,10 @@ EOF
 
 stop() {
   if ! is_running; then
+    if health; then
+      echo "PowerContext 由外部进程启动（无 pid 文件），请手动结束它（$URL）" >&2
+      return 1
+    fi
     echo "PowerContext 未运行"
     rm -f "$PID_FILE"
     return 0
@@ -177,6 +188,10 @@ status() {
       echo "PowerContext 进程存在：pid $pid，但健康检查失败（$URL）"
     fi
     echo "日志：$LOG"
+    return 0
+  fi
+  if health; then
+    echo "PowerContext 运行中（外部进程，$URL，健康检查 OK；无 pid 文件，stop 不会结束它）"
     return 0
   fi
   echo "PowerContext 未运行（$URL）"

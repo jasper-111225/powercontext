@@ -71,7 +71,7 @@ class Settings:
     llm_base: str = "http://127.0.0.1:11434"
     llm_model: str = "qwen2.5:0.5b"
     llm_timeout: float = 60.0
-    llm_enabled: bool = True
+    llm_enabled: bool = False
 
     powercontext_url: str = "http://127.0.0.1:17430"
     powercontext_token: str = "judian-local-token"
@@ -162,7 +162,7 @@ class Settings:
             llm_base=_env(env, "JUDIAN_LLM_BASE", "http://127.0.0.1:11434").rstrip("/"),
             llm_model=_env(env, "JUDIAN_LLM_MODEL", "qwen2.5:0.5b"),
             llm_timeout=_env_float(env, "JUDIAN_LLM_TIMEOUT", 60.0),
-            llm_enabled=_env_bool(env, "JUDIAN_LLM_ENABLED", True),
+            llm_enabled=_env_bool(env, "JUDIAN_LLM_ENABLED", False),
             powercontext_url=_env(
                 env, "JUDIAN_POWERCONTEXT_URL", "http://127.0.0.1:17430"
             ).rstrip("/"),

@@ -17,6 +17,13 @@ else
 fi
 
 echo "==> 安装依赖"
+if ! "$PY" -m pip --version >/dev/null 2>&1; then
+  echo "    venv 里没有 pip，尝试 ensurepip"
+  "$PY" -m ensurepip --upgrade >/dev/null 2>&1 || {
+    echo "无法安装 pip。请删除 .venv 后重试，或安装 python3-venv / python3-pip。" >&2
+    exit 1
+  }
+fi
 "$PY" -m pip install --upgrade pip >/dev/null
 "$PY" -m pip install -e ".[dev]"
 
