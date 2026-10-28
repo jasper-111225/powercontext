@@ -354,6 +354,35 @@ def _count(term: str, tokens: list[str], counter: dict[str, int], normalized: st
     return counter.get(term, 0)
 
 
+_GENERIC_DOCUMENT_TOKENS = frozenset(
+    {"10k", "10q", "8k", "2020", "2021", "2022", "2023", "2024", "2025", "inc", "corp",
+     "corporation", "company", "the", "and", "dated"}
+)
+_DOCUMENT_ALIASES = {"jnj": "johnson", "coke": "coca", "p&g": "procter", "pg": "procter"}
+
+
+def _document_id(text: str) -> str:
+    return text.split("\n", 1)[0]
+
+
+def _filter_documents(texts: dict[tuple[str, str], str], question: str) -> dict[tuple[str, str], str]:
+    """Keep only the document the question names, when its company token is unambiguous."""
+
+    question_tokens = set(_tokens(question))
+    for alias, canonical in _DOCUMENT_ALIASES.items():
+        if alias in question_tokens:
+            question_tokens.add(canonical)
+    documents = {_document_id(text) for text in texts.values()}
+    matched = {
+        document
+        for document in documents
+        if (set(_tokens(document)) - _GENERIC_DOCUMENT_TOKENS) & question_tokens
+    }
+    if not matched or len(matched) >= len(documents):
+        return texts
+    return {key: text for key, text in texts.items() if _document_id(text) in matched}
+
+
 def _rank_candidates(
     texts: dict[tuple[str, str], str],
     terms: tuple[str, ...],
@@ -469,6 +498,7 @@ async def search_pdf_pages(memory, question: str, limit: int = 10) -> tuple[Memo
             )
     if not texts:
         return ()
+    texts = _filter_documents(texts, question)
     ranked = _rank_candidates(texts, terms, expansions, question)
     results: list[MemoryCitation] = []
     pages: set[tuple[str, ...]] = set()

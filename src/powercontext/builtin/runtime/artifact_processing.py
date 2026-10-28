@@ -72,7 +72,7 @@ from powercontext.builtin.runtime.protocols import RuntimeTracing
 logger = logging.getLogger(__name__)
 _OCEANBASE_TICK_SECONDS = 1.0
 _OCEANBASE_LEASE_SECONDS = 15.0
-_RETRY_BASE_SECONDS = 30.0
+_RETRY_BASE_SECONDS = 3.0
 _RETRY_CAP_SECONDS = 1800.0
 _CONTROL_CONFLICT_RETRY_SECONDS = 0.1
 _DISCOVERY_PAGE_SIZE = 100
