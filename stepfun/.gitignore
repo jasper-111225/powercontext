@@ -1,0 +1,13 @@
+node_modules/
+.models/
+.venv/
+dist/
+web/public/ort/
+*.log
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# FP32 baseline model is only used for local benchmarking (~95MB)
+web/public/models/**/model.onnx

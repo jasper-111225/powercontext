@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-10-28T07:01:01.069Z",
+  "backend": "wasm",
+  "dtype": "int8",
+  "texts": 24,
+  "chars": 8235,
+  "rounds": 2,
+  "summary": {
+    "fixed": {
+      "runsMs": [
+        3724,
+        1894
+      ],
+      "medianMs": 2809,
+      "chunksPerSec": 8.54,
+      "charsPerSec": 2932
+    },
+    "token": {
+      "runsMs": [
+        3215,
+        3501
+      ],
+      "medianMs": 3358,
+      "chunksPerSec": 7.15,
+      "charsPerSec": 2452
+    }
+  },
+  "speedup": 0.84
+}

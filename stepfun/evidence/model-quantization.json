@@ -1,0 +1,41 @@
+{
+  "generatedAt": "2026-10-27T22:49:48.776427+00:00",
+  "sourceModel": {
+    "file": ".models/bge-small-zh-v1.5/onnx/model.onnx",
+    "bytes": 94851877,
+    "sha256": "69a0b846f4f116b5e6aabf9546ea6754d02264f3211a13a1bd69b31b8040749a"
+  },
+  "quantization": {
+    "int8": {
+      "tool": "onnxruntime.quantization.quantize_dynamic",
+      "weightType": "QUInt8",
+      "perChannel": true,
+      "activations": "dynamic (computed at runtime)",
+      "file": ".models/bge-small-zh-v1.5/onnx/model_int8_ours.onnx",
+      "elapsedSec": 1.5,
+      "bytes": 24020718,
+      "compressionRatio": 3.95,
+      "sha256": "e721f9bbae4f6122976d4aef33e39d84c53a43ac5af852b6f1c716e458bd2382",
+      "validation": {
+        "ok": true,
+        "sentences": 6,
+        "cosineMean": 0.994101,
+        "cosineMin": 0.992875,
+        "maxAbsError": 0.017849,
+        "perSentenceCosine": [
+          0.992875,
+          0.99389,
+          0.995054,
+          0.993056,
+          0.995684,
+          0.994043
+        ]
+      }
+    }
+  },
+  "summary": {
+    "fp32MB": 94.85,
+    "int8MB": 24.02,
+    "int8Compression": 3.95
+  }
+}

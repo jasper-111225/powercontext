@@ -1,0 +1,71 @@
+collection: kb_55009033
+collectionId: 3a31c1f2d29c11f1995e080027bfc56a
+table: c$v2$3a31c1f2d29c11f1995e080027bfc56a
+dimension: 512
+distance: cosine
+
+-- SHOW CREATE TABLE
+CREATE TABLE `c$v2$3a31c1f2d29c11f1995e080027bfc56a` (
+  `_id` varbinary(512) NOT NULL,
+  `document` string DEFAULT NULL,
+  `embedding` VECTOR(512) DEFAULT NULL,
+  `metadata` json DEFAULT NULL,
+  PRIMARY KEY (`_id`),
+  FULLTEXT KEY `idx_fts` (`document`) WITH PARSER ik PARSER_PROPERTIES=(ik_mode="smart") BLOCK_SIZE 16384,
+  VECTOR KEY `idx_vec` (`embedding`) WITH (DISTANCE=COSINE, TYPE=HNSW, LIB=VSAG, M=16, EF_CONSTRUCTION=200, EF_SEARCH=64, SYNC_MODE=ASYNC) BLOCK_SIZE 16384
+) ORGANIZATION HEAP DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'zstd_1.3.8' BLOCK_SIZE = 16384 TABLET_SIZE = 134217728 PCTFREE = 0 LOB_INROW_THRESHOLD=78643
+
+-- SHOW INDEX
+[
+  {
+    "Table": "c$v2$3a31c1f2d29c11f1995e080027bfc56a",
+    "Non_unique": 0,
+    "Key_name": "PRIMARY",
+    "Seq_in_index": 1,
+    "Column_name": "_id",
+    "Collation": "A",
+    "Cardinality": null,
+    "Sub_part": null,
+    "Packed": null,
+    "Null": "",
+    "Index_type": "BTREE",
+    "Comment": "available",
+    "Index_comment": "",
+    "Visible": "YES",
+    "Expression": null
+  },
+  {
+    "Table": "c$v2$3a31c1f2d29c11f1995e080027bfc56a",
+    "Non_unique": 1,
+    "Key_name": "idx_fts",
+    "Seq_in_index": 1,
+    "Column_name": "document",
+    "Collation": "A",
+    "Cardinality": null,
+    "Sub_part": null,
+    "Packed": null,
+    "Null": "YES",
+    "Index_type": "FULLTEXT",
+    "Comment": "available",
+    "Index_comment": "",
+    "Visible": "YES",
+    "Expression": null
+  },
+  {
+    "Table": "c$v2$3a31c1f2d29c11f1995e080027bfc56a",
+    "Non_unique": 1,
+    "Key_name": "idx_vec",
+    "Seq_in_index": 1,
+    "Column_name": "embedding",
+    "Collation": "A",
+    "Cardinality": null,
+    "Sub_part": null,
+    "Packed": null,
+    "Null": "YES",
+    "Index_type": "VECTOR",
+    "Comment": "available",
+    "Index_comment": "",
+    "Visible": "YES",
+    "Expression": null
+  }
+]

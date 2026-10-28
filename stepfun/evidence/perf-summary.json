@@ -1,0 +1,67 @@
+{
+  "generatedAt": "2026-10-28T07:10:00Z",
+  "rows": [
+    {
+      "label": "fp32+wasm",
+      "backend": "wasm",
+      "dtype": "fp32",
+      "modelLoadColdMs": 41800,
+      "modelLoadWarmMs": 4999,
+      "warmupMs": 259,
+      "ingest49EmbedMs": 13389.4,
+      "ingest49ChunksPerSec": 3.66,
+      "ingestWriteMs": 1353.3,
+      "ingestRefreshMs": 627.8,
+      "queryEmbedP50Ms": 94.2,
+      "dbSearchP50Ms": 54.7,
+      "e2eP50Ms": 158.6,
+      "e2eP95Ms": 212.6,
+      "docChunksPerSec": 8.07,
+      "adapter": null,
+      "crossOriginIsolated": true
+    },
+    {
+      "label": "int8+wasm",
+      "backend": "wasm",
+      "dtype": "int8",
+      "modelLoadColdMs": 20000,
+      "modelLoadWarmMs": 1246,
+      "warmupMs": 206,
+      "ingest49EmbedMs": 10872.3,
+      "ingest49ChunksPerSec": 4.51,
+      "ingestWriteMs": 991.1,
+      "ingestRefreshMs": 546.3,
+      "queryEmbedP50Ms": 38.1,
+      "dbSearchP50Ms": 53.7,
+      "e2eP50Ms": 89.6,
+      "e2eP95Ms": 136.9,
+      "docChunksPerSec": 10.03,
+      "adapter": null,
+      "crossOriginIsolated": true
+    },
+    {
+      "label": "int8+webgpu",
+      "backend": "webgpu",
+      "dtype": "int8",
+      "modelLoadColdMs": 24463,
+      "modelLoadWarmMs": 1300,
+      "warmupMs": 3644,
+      "ingest49EmbedMs": 156154.3,
+      "ingest49ChunksPerSec": 0.31,
+      "ingestWriteMs": 513.5,
+      "ingestRefreshMs": 658.5,
+      "queryEmbedP50Ms": 507.6,
+      "dbSearchP50Ms": 19.6,
+      "e2eP50Ms": 526.8,
+      "e2eP95Ms": 1417,
+      "docChunksPerSec": 1.97,
+      "adapter": "swiftshader",
+      "crossOriginIsolated": true
+    }
+  ],
+  "notes": [
+    "49 chunks = 14 sample docs / 15098 chars; query timings = 5 queries x 3 rounds, median in-app.",
+    "Cold load varies 20-78s on this shared 4-core machine; warm load measured by reloading the page in the same profile.",
+    "WebGPU adapter on this machine is SwiftShader (software); numbers are not representative of hardware GPUs."
+  ]
+}

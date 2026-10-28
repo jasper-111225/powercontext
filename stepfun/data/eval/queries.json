@@ -1,0 +1,102 @@
+[
+  {
+    "id": "q01",
+    "query": "seekdb 是什么数据库？",
+    "relevant": ["01-seekdb-overview.md"]
+  },
+  {
+    "id": "q02",
+    "query": "seekdb 有哪两种部署模式？",
+    "relevant": ["01-seekdb-overview.md"]
+  },
+  {
+    "id": "q03",
+    "query": "HNSW 索引怎么加速向量近邻搜索？",
+    "relevant": ["02-vector-hnsw.md"]
+  },
+  {
+    "id": "q04",
+    "query": "向量维度由什么决定？",
+    "relevant": ["02-vector-hnsw.md", "08-bge-model.md"]
+  },
+  {
+    "id": "q05",
+    "query": "中文全文检索用哪个分词器？",
+    "relevant": ["03-fulltext-ik.md"]
+  },
+  {
+    "id": "q06",
+    "query": "ik 和 ngram 分词有什么区别？",
+    "relevant": ["03-fulltext-ik.md"]
+  },
+  {
+    "id": "q07",
+    "query": "RRF 融合的公式是什么？",
+    "relevant": ["04-hybrid-rrf.md"]
+  },
+  {
+    "id": "q08",
+    "query": "为什么混合检索要在数据库内完成？",
+    "relevant": ["04-hybrid-rrf.md", "13-hybrid-search-en.md"]
+  },
+  {
+    "id": "q09",
+    "query": "seekdb-js 怎么创建集合？",
+    "relevant": ["05-seekdb-js.md"]
+  },
+  {
+    "id": "q10",
+    "query": "写完数据为什么要 refresh_index？",
+    "relevant": ["05-seekdb-js.md", "12-incremental-state.md"]
+  },
+  {
+    "id": "q11",
+    "query": "浏览器里怎么运行 embedding 模型？",
+    "relevant": ["06-on-device-inference.md", "09-webgpu-wasm.md"]
+  },
+  {
+    "id": "q12",
+    "query": "INT8 动态量化是怎么做的？",
+    "relevant": ["07-int8-quantization.md"]
+  },
+  {
+    "id": "q13",
+    "query": "量化前后模型体积和压缩比是多少？",
+    "relevant": ["07-int8-quantization.md", "08-bge-model.md"]
+  },
+  {
+    "id": "q14",
+    "query": "bge 模型为什么用 CLS 池化？",
+    "relevant": ["08-bge-model.md"]
+  },
+  {
+    "id": "q15",
+    "query": "WebGPU 不可用时如何降级？",
+    "relevant": ["09-webgpu-wasm.md", "06-on-device-inference.md"]
+  },
+  {
+    "id": "q16",
+    "query": "Recall@K 和 nDCG 怎么评估检索质量？",
+    "relevant": ["10-evaluation.md"]
+  },
+  {
+    "id": "q17",
+    "query": "端到端延迟分成哪几段？",
+    "relevant": ["11-performance.md"]
+  },
+  {
+    "id": "q18",
+    "query": "增量导入如何避免重复数据？",
+    "relevant": ["12-incremental-state.md"]
+  },
+  {
+    "id": "q19",
+    "query": "文档会被上传到云端吗？",
+    "relevant": ["14-privacy-faq.md"]
+  },
+  {
+    "id": "q20",
+    "query": "hybrid search combines which two retrieval paths?",
+    "relevant": ["13-hybrid-search-en.md", "04-hybrid-rrf.md"]
+  }
+]

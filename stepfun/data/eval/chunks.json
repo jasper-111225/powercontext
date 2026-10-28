@@ -1,0 +1,1075 @@
+{
+  "generatedAt": "2026-10-28T07:03:19.269Z",
+  "corpus": "data/corpus",
+  "docs": 14,
+  "documents": [
+    {
+      "docName": "01-seekdb-overview.md",
+      "docId": "0c1hd3d",
+      "chunks": [
+        {
+          "id": "0c1hd3d#0",
+          "docId": "0c1hd3d",
+          "docName": "01-seekdb-overview.md",
+          "index": 0,
+          "total": 3,
+          "text": "seekdb 概览\nseekdb 是 OceanBase 推出的 AI 原生数据库，定位是把向量检索、全文检索和关系型数据放在同一个引擎里。\n它兼容 MySQL 协议，现有 MySQL 客户端、ORM 和 SQL 工具可以直接连接，因此业务系统不需要为了向量能力再引入一套独立的向量数据库。\nseekdb 有两种使用方式。\n第一种是嵌入式模式，数据库以库的形式链接进应用进程，适合桌面应用、CLI 工具和单机服务，数据目录通常是一个本地路径。\n第二种是服务器模式，seekdb 以独立进程运行并监听端口（默认 2881），应用通过 MySQL 协议连接。\n本知识库示例使用服务器模式，方便浏览器应用与数据库进程分离部署。\n在 AI 能力方面，seekdb 提供 VECTOR 类型、HNSW 向量索引、FULLTEXT 全文索引，以及 DBMS_HYBRID_SEARCH 这样的混合检索函数。",
+          "lang": "zh",
+          "chars": 397
+        },
+        {
+          "id": "0c1hd3d#1",
+          "docId": "0c1hd3d",
+          "docName": "01-seekdb-overview.md",
+          "index": 1,
+          "total": 3,
+          "text": "向量索引支持 cosine、l2 和 inner_product 三种距离度量；\n全文索引支持 space、ngram、ngram2、beng、ik 等分词器，其中 ik 适合中文分词。\n对端侧 AI 应用来说，seekdb 的价值在于数据边界清晰：用户文档和向量都留在本地数据库里，浏览器只负责把文本编码成向量，数据库负责存储、索引和排序。\n这样既满足了隐私要求，也避免了把检索逻辑拆成两套系统。\nseekdb 的版本可以通过 SELECT VERSION() 查看，返回结果类似 5.7.25-OceanBase seekdb-v1.4.0.0。\n这个版本号同时说明了 MySQL 兼容版本和 seekdb 自身的版本，排查驱动兼容性问题时很有用。\n在部署上，seekdb 允许通过参数控制数据文件、日志盘、内存等资源。\n单机演示通常给 1GB 数据文件和 2GB 日志盘即可；\n生产环境再按数据量调整。",
+          "lang": "zh",
+          "chars": 404
+        },
+        {
+          "id": "0c1hd3d#2",
+          "docId": "0c1hd3d",
+          "docName": "01-seekdb-overview.md",
+          "index": 2,
+          "total": 3,
+          "text": "在部署上，seekdb 允许通过参数控制数据文件、日志盘、内存等资源。\n单机演示通常给 1GB 数据文件和 2GB 日志盘即可；\n生产环境再按数据量调整。\n需要注意的是，长期运行的实例不要随意重装，否则实例标识会变化，依赖该标识的遥测或授权状态可能失效。",
+          "lang": "zh",
+          "chars": 127
+        }
+      ]
+    },
+    {
+      "docName": "02-vector-hnsw.md",
+      "docId": "0epsx2j",
+      "chunks": [
+        {
+          "id": "0epsx2j#0",
+          "docId": "0epsx2j",
+          "docName": "02-vector-hnsw.md",
+          "index": 0,
+          "total": 4,
+          "text": "向量检索与 HNSW 索引\n向量检索的基本流程是：把文本、图片或其他对象编码成固定维度的稠密向量，查询时把查询对象编码成同维度向量，然后在向量集合里找距离最近的前 K 个结果。\n向量维度由 embedding 模型决定，例如 bge-small-zh-v1.5 输出 512 维，all-MiniLM-L6-v2 输出 384 维。\nseekdb 用 VECTOR(n) 类型保存向量，n 是维度。\n建表时可以声明向量索引，例如：\nCREATE TABLE chunks (\nid VARCHAR(64) PRIMARY KEY,\ndocument TEXT,\nembedding VECTOR(512),\nmetadata JSON,\nVECTOR KEY idx_vec (embedding) WITH (DISTANCE=COSINE, TYPE=HNSW)\n);",
+          "lang": "zh",
+          "chars": 386
+        },
+        {
+          "id": "0epsx2j#1",
+          "docId": "0epsx2j",
+          "docName": "02-vector-hnsw.md",
+          "index": 1,
+          "total": 4,
+          "text": "VECTOR KEY idx_vec (embedding) WITH (DISTANCE=COSINE, TYPE=HNSW)\n);\nHNSW 是分层可导航小世界图（Hierarchical Navigable Small World）。\n它把向量组织成多层图：顶层稀疏、底层稠密。\n查询从顶层的一个入口点开始做贪心搜索，找到局部最近点后下降到下一层继续搜索，直到最底层得到候选集合。\n相比全量扫描，HNSW 用少量召回损失换来了数量级的延迟下降。\n影响 HNSW 的关键参数包括 M（每个节点的邻居数）、ef_construction（建索引时的候选队列长度）和 ef_search（查询时的候选队列长度）。\nM 越大，图连接越密，召回越高但内存和构建时间也越大；\nef_search 越大，查询越准但越慢。\n实际调优时先在固定数据集上测 Recall@K，再逐步降低 ef_search，找到质量与延迟的平衡点。",
+          "lang": "zh",
+          "chars": 409
+        },
+        {
+          "id": "0epsx2j#2",
+          "docId": "0epsx2j",
+          "docName": "02-vector-hnsw.md",
+          "index": 2,
+          "total": 4,
+          "text": "ef_search 越大，查询越准但越慢。\n实际调优时先在固定数据集上测 Recall@K，再逐步降低 ef_search，找到质量与延迟的平衡点。\n距离度量要和 embedding 的训练方式匹配。\nbge 系列和大多数句向量模型使用余弦相似度，因此建索引时选择 COSINE。\n若模型输出已经归一化，余弦相似度与内积排序等价，但显式声明 COSINE 更不容易出错。\nl2 适合未归一化的特征向量。\n向量索引是异步维护的。\n新写入的行先进入增量结构，只有执行刷新（refresh index）后才会合并进可检索的索引。\n很多“写完立刻查不到”的问题都源于忽略了这一步。\n应用应在一次导入结束后显式刷新，或者按固定时间窗口批量刷新，兼顾写入吞吐和查询可见性。",
+          "lang": "zh",
+          "chars": 330
+        },
+        {
+          "id": "0epsx2j#3",
+          "docId": "0epsx2j",
+          "docName": "02-vector-hnsw.md",
+          "index": 3,
+          "total": 4,
+          "text": "很多“写完立刻查不到”的问题都源于忽略了这一步。\n应用应在一次导入结束后显式刷新，或者按固定时间窗口批量刷新，兼顾写入吞吐和查询可见性。\n在 seekdb-js 中，collection.query({ queryEmbeddings, nResults }) 会执行向量近邻查询，返回 ids、documents、metadatas 和 distances。\ndistances 的含义取决于距离度量：cosine 距离越小越相似，换算成相似度为 1 - distance。",
+          "lang": "zh",
+          "chars": 238
+        }
+      ]
+    },
+    {
+      "docName": "03-fulltext-ik.md",
+      "docId": "1hcvn7l",
+      "chunks": [
+        {
+          "id": "1hcvn7l#0",
+          "docId": "1hcvn7l",
+          "docName": "03-fulltext-ik.md",
+          "index": 0,
+          "total": 3,
+          "text": "全文索引与中文分词\n全文检索解决的是“关键词匹配”问题：把文档切成词项，建立词项到文档的倒排表，查询时对词项求交并计算相关性。\n它和向量检索互补——向量擅长语义相近但用词不同的情况，全文擅长精确术语、编号、人名和代码符号。\nseekdb 的全文索引通过 FULLTEXT KEY ... WITH PARSER 指定分词器。\n英文可以用空格分词，中文则需要专门的分词器：ngram 按固定长度滑窗切分，实现简单但会产生较多无意义词项；\nik 基于词典和统计模型，能识别“向量数据库”“倒排索引”这类复合词，检索质量和索引体积都更均衡。\n创建集合时可以指定全文分析器。\n使用 seekdb-js 时，configuration 里可以写：\nconfiguration: {\nhnsw: { dimension: 512, distance: \"cosine\" },",
+          "lang": "zh",
+          "chars": 381
+        },
+        {
+          "id": "1hcvn7l#1",
+          "docId": "1hcvn7l",
+          "docName": "03-fulltext-ik.md",
+          "index": 1,
+          "total": 3,
+          "text": "configuration: {\nhnsw: { dimension: 512, distance: \"cosine\" },\nfulltextConfig: { analyzer: \"ik\", properties: { ik_mode: \"smart\" } }\n}\n建表语句里会体现为 FULLTEXT KEY idx_fts (document) WITH PARSER ik PARSER_PROPERTIES=(ik_mode=\"smart\")。\n如果运行环境没有启用 ik，SDK 会回退到 ngram，这时应在元数据里记录实际使用的分析器，避免评估时误判。\n查询时，seekdb-js 的 whereDocument: { $contains: \"...\" } 会被转换成 query_string 查询。",
+          "lang": "zh",
+          "chars": 359
+        },
+        {
+          "id": "1hcvn7l#2",
+          "docId": "1hcvn7l",
+          "docName": "03-fulltext-ik.md",
+          "index": 2,
+          "total": 3,
+          "text": "查询时，seekdb-js 的 whereDocument: { $contains: \"...\" } 会被转换成 query_string 查询。\nquery_string 支持布尔运算符和通配符，因此用户输入要先做清洗：去掉引号、冒号、括号、加减号等特殊字符，否则一个多余的引号就可能让查询变成语法错误。\n清洗后仍然保留空格，让分词器自行处理。\n中文检索的质量很大程度取决于分词粒度。\n以“向量检索”为例，ik 可能切成“向量 / 检索”，于是包含“全文检索”的文档也会命中“检索”。\n这是词法检索的固有特性，也是混合检索要引入向量一路的原因：RRF 会让两路都靠前的结果胜出，单一词项误匹配很难同时骗过两路。\n全文索引同样需要刷新才能看到新写入的内容。\n批量导入时，把文档写入和索引刷新分开计时，可以清楚看到“写入耗时”和“可见性延迟”各自占多少。",
+          "lang": "zh",
+          "chars": 377
+        }
+      ]
+    },
+    {
+      "docName": "04-hybrid-rrf.md",
+      "docId": "1r6lfr9",
+      "chunks": [
+        {
+          "id": "1r6lfr9#0",
+          "docId": "1r6lfr9",
+          "docName": "04-hybrid-rrf.md",
+          "index": 0,
+          "total": 4,
+          "text": "混合检索与 RRF 融合\n混合检索把向量近邻和全文匹配两路结果合并成一个排名。\n常见的融合方式有两种：加权分数融合和排名融合。\n加权分数融合需要把余弦距离和 BM25 分数映射到同一量纲，调参成本高；\n排名融合只使用名次，天然不受分数量纲影响，其中 RRF（Reciprocal Rank Fusion，倒数排名融合）最常用。\nRRF 的公式是：对每个候选文档，累加每一路里的 1 / (k + rank)，其中 rank 从 1 开始，k 是平滑常数，通常取 60。\n两路都排在前面的文档得分最高；\n只在一路出现的文档也能获得基础分。\nk 越大，排名差异被抹得越平；\nk 越小，头部结果的优势越明显。\n在 seekdb 中，混合检索由数据库函数 DBMS_HYBRID_SEARCH 完成。\n调用方把查询描述写进会话变量 search_parm，再用 GET_SQL 生成实际查询语句。",
+          "lang": "zh",
+          "chars": 394
+        },
+        {
+          "id": "1r6lfr9#1",
+          "docId": "1r6lfr9",
+          "docName": "04-hybrid-rrf.md",
+          "index": 1,
+          "total": 4,
+          "text": "调用方把查询描述写进会话变量 search_parm，再用 GET_SQL 生成实际查询语句。\nsearch_parm 里包含 query（全文条件）、knn（向量条件）、rank（融合方式）和 size（返回条数）。\n数据库在一次查询里完成两路召回与融合，客户端拿到的已经是最终排名。\n使用 seekdb-js 时不需要手写这些 SQL，调用：\ncollection.hybridSearch({\nquery: { whereDocument: { $contains: \"混合检索\" }, nResults: 120 },\nknn: { queryEmbeddings: vector, nResults: 120 },\nrank: { rrf: { rankWindowSize: 120, rankConstant: 60 } },\nnResults: 10,",
+          "lang": "zh",
+          "chars": 384
+        },
+        {
+          "id": "1r6lfr9#2",
+          "docId": "1r6lfr9",
+          "docName": "04-hybrid-rrf.md",
+          "index": 2,
+          "total": 4,
+          "text": "rank: { rrf: { rankWindowSize: 120, rankConstant: 60 } },\nnResults: 10,\ninclude: [\"documents\", \"metadatas\", \"distances\"]\n});\nrankWindowSize 决定每一路进入融合的候选数量，它应该大于最终返回条数，否则融合空间太小。\n经验上取 max(60, topK * 8)。\nrankConstant 对应公式里的 k。\n为什么强调“在数据库内融合”？\n如果客户端分别取两路结果再自己拼合，会引入三个问题：两路的分页和过滤条件容易不一致；\n候选集大小受网络往返限制；\n无法利用数据库的过滤下推。\n把融合放进数据库，才能保证同一事务视图、同一过滤条件和稳定的排名。\n评估混合检索时，要分别记录向量路、全文路和融合后的指标。",
+          "lang": "zh",
+          "chars": 373
+        },
+        {
+          "id": "1r6lfr9#3",
+          "docId": "1r6lfr9",
+          "docName": "04-hybrid-rrf.md",
+          "index": 3,
+          "total": 4,
+          "text": "无法利用数据库的过滤下推。\n把融合放进数据库，才能保证同一事务视图、同一过滤条件和稳定的排名。\n评估混合检索时，要分别记录向量路、全文路和融合后的指标。\n融合通常能提升 Recall@K 和 nDCG，但如果两路质量差距过大，融合也可能被弱的一路拖累，这时应调整候选窗口或降低弱路的权重。",
+          "lang": "zh",
+          "chars": 144
+        }
+      ]
+    },
+    {
+      "docName": "05-seekdb-js.md",
+      "docId": "0t532tz",
+      "chunks": [
+        {
+          "id": "0t532tz#0",
+          "docId": "0t532tz",
+          "docName": "05-seekdb-js.md",
+          "index": 0,
+          "total": 4,
+          "text": "seekdb-js 数据层接入\nseekdb-js 是官方 Node.js 客户端，支持嵌入式和服务端两种连接方式。\n服务端模式只需要 host、port、user、password 和 database：\nimport { SeekdbClient } from \"seekdb\";\nconst client = new SeekdbClient({\nhost: \"127.0.0.1\", port: 2881, user: \"root\", password: \"\", database: \"stepfun_kb\"\n});\n创建集合时要显式传入 embeddingFunction: null。\n这是因为 SDK 默认会寻找名为 default-embed 的嵌入函数；\n本项目的向量全部在浏览器里算好，服务端不应该再加载一个模型。",
+          "lang": "zh",
+          "chars": 367
+        },
+        {
+          "id": "0t532tz#1",
+          "docId": "0t532tz",
+          "docName": "05-seekdb-js.md",
+          "index": 1,
+          "total": 4,
+          "text": "这是因为 SDK 默认会寻找名为 default-embed 的嵌入函数；\n本项目的向量全部在浏览器里算好，服务端不应该再加载一个模型。\n把维度写在 configuration 里，SDK 会据此创建 VECTOR(512) 列和 HNSW 索引。\n写入使用 collection.add 或 collection.upsert。\nupsert 的语义是“存在则覆盖、不存在则插入”，非常适合增量导入：分块 ID 由文档内容哈希和序号生成，同一个文件重复导入不会产生重复数据。\n写入支持批量，一次几十到几百条比逐条写入快得多，因为减少了网络往返和事务开销。\ncollection.refresh_index() 是让新数据立即可检索的关键。\n它会把增量数据合并进索引。\n刷新本身有成本，所以策略上应该“批量写完再刷新”，而不是每写一条刷新一次。\n本项目每次导入提交后刷新一次，并在界面上单独展示写入耗时和刷新耗时。\n查询接口主要有三个。",
+          "lang": "zh",
+          "chars": 418
+        },
+        {
+          "id": "0t532tz#2",
+          "docId": "0t532tz",
+          "docName": "05-seekdb-js.md",
+          "index": 2,
+          "total": 4,
+          "text": "本项目每次导入提交后刷新一次，并在界面上单独展示写入耗时和刷新耗时。\n查询接口主要有三个。\ncollection.query 只做向量近邻；\ncollection.hybridSearch 做全文加向量的融合；\ncollection.get 按 ID 或过滤条件取回记录。\n所有查询都支持 include 参数控制返回字段，只取需要的字段可以减少序列化开销。\n集合元数据保存在数据库内部的元数据表里，SDK 通过 collectionId 定位实际的数据表。\n数据表名通常形如 c$v2$<uuid>，因此不要硬编码表名；\n要用 DDL 证据时，可以查 information_schema 里的表名，再执行 SHOW CREATE TABLE 和 SHOW INDEX。\n连接池和超时也值得注意。\n服务端模式底层使用 mysql2，长时间运行的 Node 进程应复用同一个 client，而不是每个请求新建连接。",
+          "lang": "zh",
+          "chars": 407
+        },
+        {
+          "id": "0t532tz#3",
+          "docId": "0t532tz",
+          "docName": "05-seekdb-js.md",
+          "index": 3,
+          "total": 4,
+          "text": "连接池和超时也值得注意。\n服务端模式底层使用 mysql2，长时间运行的 Node 进程应复用同一个 client，而不是每个请求新建连接。\n查询超时可以通过构造参数设置，避免慢查询把请求堆积住。",
+          "lang": "zh",
+          "chars": 98
+        }
+      ]
+    },
+    {
+      "docName": "06-on-device-inference.md",
+      "docId": "1fqjx4d",
+      "chunks": [
+        {
+          "id": "1fqjx4d#0",
+          "docId": "1fqjx4d",
+          "docName": "06-on-device-inference.md",
+          "index": 0,
+          "total": 3,
+          "text": "浏览器端侧推理\n端侧推理指模型在用户设备上执行，输入数据不离开设备。\n对知识库应用来说，这意味着用户导入的文档只在本地被编码，不会上传到云端；\n即使应用部署在公网，推理仍然发生在浏览器里。\n在浏览器里跑 Transformer 模型有两种主流方案。\nTransformers.js 提供与 Python transformers 类似的 pipeline API，封装了分词、模型加载、池化和归一化；\nONNX Runtime Web 更底层，直接执行 ONNX 计算图。\nTransformers.js 内部就用 ONNX Runtime Web 作为执行引擎，所以两者可以混用：用 Transformers.js 处理文本，用 ORT 的 session options 调优执行后端。\n执行后端主要有 WebGPU 和 WASM。\nWebGPU 把矩阵运算交给 GPU，适合较大的 batch；",
+          "lang": "zh",
+          "chars": 400
+        },
+        {
+          "id": "1fqjx4d#1",
+          "docId": "1fqjx4d",
+          "docName": "06-on-device-inference.md",
+          "index": 1,
+          "total": 3,
+          "text": "执行后端主要有 WebGPU 和 WASM。\nWebGPU 把矩阵运算交给 GPU，适合较大的 batch；\nWASM 用 CPU 执行，兼容性最好，但吞吐较低。\n正确的策略是“优先 WebGPU，失败自动降级 WASM”，并把当前后端明确展示给用户，而不是静默切换。\n模型文件通过 fetch 加载，ONNX 权重通常有几十 MB。\n加载时间包括网络传输、解析计算图和初始化执行后端。\n首次加载明显慢于后续加载，因此性能报告要区分首次与预热后。\n浏览器 HTTP 缓存、Cache Storage 和 Service Worker 都可以减少重复下载，但要注意模型更新后的缓存失效。\n推理时的批大小需要权衡。\n批越大，单条平均耗时越低，但首条结果的等待时间越长，显存或内存占用也越高。\n交互式应用通常用 8 到 16 的小批量，并在导入时按批推进进度条；\n查询时 batch 固定为 1，优先保证低延迟。\n线程数也会影响 WASM 性能。",
+          "lang": "zh",
+          "chars": 420
+        },
+        {
+          "id": "1fqjx4d#2",
+          "docId": "1fqjx4d",
+          "docName": "06-on-device-inference.md",
+          "index": 2,
+          "total": 3,
+          "text": "交互式应用通常用 8 到 16 的小批量，并在导入时按批推进进度条；\n查询时 batch 固定为 1，优先保证低延迟。\n线程数也会影响 WASM 性能。\n多线程 WASM 需要 SharedArrayBuffer，而 SharedArrayBuffer 要求页面开启跨源隔离，即响应头包含 Cross-Origin-Opener-Policy: same-origin 和 Cross-Origin-Embedder-Policy: require-corp。\n不开这两个头，ORT 只能单线程运行。\n开启后还要确认所有静态资源都带正确的 CORP 头，否则会被浏览器拦截。\n最后是降级路径的验证。\n只在支持 WebGPU 的机器上测试是不够的，必须在不支持 WebGPU 的环境里跑一遍完整流程：模型能加载、向量能生成、检索能返回结果、界面明确提示当前使用 WASM。",
+          "lang": "zh",
+          "chars": 385
+        }
+      ]
+    },
+    {
+      "docName": "07-int8-quantization.md",
+      "docId": "0i9nmv4",
+      "chunks": [
+        {
+          "id": "0i9nmv4#0",
+          "docId": "0i9nmv4",
+          "docName": "07-int8-quantization.md",
+          "index": 0,
+          "total": 3,
+          "text": "ONNX INT8 动态量化\n量化是把浮点权重映射到低比特整数的过程。\n对 Transformer 来说，权重占模型体积的绝大部分，把 FP32 权重换成 INT8，理论上体积可以降到四分之一。\n实际文件还会包含缩放因子、零点和非量化算子，因此压缩比略低于 4。\nONNX Runtime 提供动态量化（dynamic quantization）。\n它只量化权重，激活值在推理时根据实际数值动态计算缩放因子。\n优点是校准简单，不需要代表性数据集；\n缺点是推理时多了一点计算量。\n对本项目这种“权重远大于激活”的小模型，动态量化是性价比最高的选择。\n动态量化的关键参数是权重类型和是否逐通道。\n权重类型选 QUInt8（无符号 8 位整数）通常比 QInt8 更稳，因为激活和权重的零点分布更自然。\n逐通道（per-channel）为每个输出通道单独计算缩放因子，精度明显优于逐张量。",
+          "lang": "zh",
+          "chars": 391
+        },
+        {
+          "id": "0i9nmv4#1",
+          "docId": "0i9nmv4",
+          "docName": "07-int8-quantization.md",
+          "index": 1,
+          "total": 3,
+          "text": "逐通道（per-channel）为每个输出通道单独计算缩放因子，精度明显优于逐张量。\n实测中，QInt8 逐通道且不缩小范围时，句向量余弦相似度会降到 0.84，而 QUInt8 逐通道可以保持 0.994，这说明量化配置不能照抄，必须实测。\n量化的产物仍然是标准 ONNX 文件，浏览器不需要额外的反量化代码。\nONNX Runtime Web 的 WASM 后端支持 MatMulInteger 等量化算子，Transformers.js 通过 dtype 选择文件名：fp32 对应 model.onnx，fp16 对应 model_fp16.onnx，int8 对应 model_int8.onnx，q8 对应 model_quantized.onnx。\n评估量化不能只看困惑度或单句相似度，还要看检索指标。",
+          "lang": "zh",
+          "chars": 358
+        },
+        {
+          "id": "0i9nmv4#2",
+          "docId": "0i9nmv4",
+          "docName": "07-int8-quantization.md",
+          "index": 2,
+          "total": 3,
+          "text": "评估量化不能只看困惑度或单句相似度，还要看检索指标。\n推荐做法是固定一份带标注的查询集，分别在 FP32 和 INT8 模型上跑 Recall@K、nDCG@K 和 MRR，报告变化幅度。\n句向量余弦相似度适合做冒烟检查，检索指标才反映真实影响。\n模型体积要按同一口径统计：只统计实际下载的 ONNX 权重文件，不要把分词器、配置文件和运行时 wasm 算进去。\n压缩比等于 FP32 体积除以量化后体积。\n本项目 FP32 为 94.9MB，INT8 为 24.0MB，压缩比 3.95 倍。",
+          "lang": "zh",
+          "chars": 247
+        }
+      ]
+    },
+    {
+      "docName": "08-bge-model.md",
+      "docId": "1pwfdkx",
+      "chunks": [
+        {
+          "id": "1pwfdkx#0",
+          "docId": "1pwfdkx",
+          "docName": "08-bge-model.md",
+          "index": 0,
+          "total": 3,
+          "text": "bge-small-zh-v1.5 模型\nbge-small-zh-v1.5 是 BAAI 发布的中文小模型，属于 BGE（BAAI General Embedding）系列。\n它的隐藏层维度是 512，输出 512 维句向量，参数量约 2400 万，FP32 ONNX 体积约 95MB。\n相比 bge-base 和 bge-large，small 版本更适合端侧：推理更快、内存占用更低，检索质量在中文短文本场景仍然够用。\nBGE 系列使用 CLS 池化，也就是取最后一层 [CLS] 位置的隐藏状态作为句向量，而不是对所有 token 做平均池化。\nTransformers.js 的 feature-extraction pipeline 支持 pooling: \"cls\"，同时用 normalize: true 做 L2 归一化。\n归一化之后，余弦相似度可以直接用内积计算，排序也更稳定。",
+          "lang": "zh",
+          "chars": 400
+        },
+        {
+          "id": "1pwfdkx#1",
+          "docId": "1pwfdkx",
+          "docName": "08-bge-model.md",
+          "index": 1,
+          "total": 3,
+          "text": "归一化之后，余弦相似度可以直接用内积计算，排序也更稳定。\nBGE v1.5 建议给查询加指令前缀，中文的推荐前缀是“为这个句子生成表示以用于检索相关文章：”。\n文档侧不加前缀。\n这个前缀会让查询向量靠近“检索意图”的表示空间，对短查询提升明显。\n前缀必须在查询和文档两侧保持一致的使用方式，否则训练和推理分布不匹配。\n分词器是 BERT 的 WordPiece，中文按字切分，英文按子词切分，最大长度 512。\n我们的分块控制在 420 字符左右，加上前缀后仍远小于 512 个 token，因此不需要截断，也不会浪费太多填充。\n选择中文模型而不是 all-MiniLM-L6-v2 的原因是语料以中文为主。\nall-MiniLM 在英文上很强，但对中文的语义区分度有限，容易出现“看起来都差不多”的向量。\nbge-small-zh 在中文语义检索上的召回明显更好，同时模型体积与 MiniLM 接近，适合作为端侧默认模型。",
+          "lang": "zh",
+          "chars": 412
+        },
+        {
+          "id": "1pwfdkx#2",
+          "docId": "1pwfdkx",
+          "docName": "08-bge-model.md",
+          "index": 2,
+          "total": 3,
+          "text": "bge-small-zh 在中文语义检索上的召回明显更好，同时模型体积与 MiniLM 接近，适合作为端侧默认模型。\n模型来源必须写清楚：Hugging Face 上的 Xenova/bge-small-zh-v1.5 是官方权重的 ONNX 转换版，包含 fp32、fp16、int8 等多种精度；\nModelScope 上有同一仓库的镜像。\n本项目从镜像下载 FP32 权重，再用 ONNX Runtime 自行量化，因此量化方法和体积数据都可以复现。",
+          "lang": "zh",
+          "chars": 228
+        }
+      ]
+    },
+    {
+      "docName": "09-webgpu-wasm.md",
+      "docId": "0nmjpw3",
+      "chunks": [
+        {
+          "id": "0nmjpw3#0",
+          "docId": "0nmjpw3",
+          "docName": "09-webgpu-wasm.md",
+          "index": 0,
+          "total": 3,
+          "text": "WebGPU 与 WASM 降级\nWebGPU 是浏览器的新一代图形与计算接口，能把 ONNX 计算图映射到 GPU 的 compute shader。\n它比 WebGL 更适合通用计算，支持存储缓冲区和工作组，矩阵乘法可以并行到数千个线程。\n检测 WebGPU 要分两步。\n第一步看 navigator.gpu 是否存在，第二步调用 requestAdapter() 获取适配器；\n有些环境暴露了 API 但没有可用适配器，只判断第一步会误判。\n适配器的 info 里可以看到 vendor、architecture 和 description，例如软件渲染器会显示 swiftshader，集成显卡会显示厂商名。\n把这些信息展示在界面上，有助于判断性能数据的来源。\n拿到适配器不等于模型一定能跑。\nONNX Runtime Web 的 WebGPU 执行器需要算子支持；",
+          "lang": "zh",
+          "chars": 387
+        },
+        {
+          "id": "0nmjpw3#1",
+          "docId": "0nmjpw3",
+          "docName": "09-webgpu-wasm.md",
+          "index": 1,
+          "total": 3,
+          "text": "把这些信息展示在界面上，有助于判断性能数据的来源。\n拿到适配器不等于模型一定能跑。\nONNX Runtime Web 的 WebGPU 执行器需要算子支持；\n如果模型里有权重为 INT8 的量化算子，GPU 可能不支持，需要回退到 CPU 或换用 FP16。\n另一个常见问题是 FP16 支持：Transformers.js 在 WebGPU 上加载 fp16 模型前会检查 shader-f16 特性，不支持就直接报错。\n因此“自动选择精度”要按实际特性判断，而不是假设 GPU 一定能跑 fp16。\nWASM 是保底路径。\nONNX Runtime Web 提供 SIMD 和多线程版本，多线程依赖 SharedArrayBuffer，而 SharedArrayBuffer 需要跨源隔离。\n开启跨源隔离后，crossOriginIsolated 为 true，WASM 线程数可以设到 4；\n未开启时只能单线程，吞吐大约减半。",
+          "lang": "zh",
+          "chars": 416
+        },
+        {
+          "id": "0nmjpw3#2",
+          "docId": "0nmjpw3",
+          "docName": "09-webgpu-wasm.md",
+          "index": 2,
+          "total": 3,
+          "text": "开启跨源隔离后，crossOriginIsolated 为 true，WASM 线程数可以设到 4；\n未开启时只能单线程，吞吐大约减半。\n应用应把这两个状态显示出来，方便解释性能差异。\n降级策略应该是链式的：先尝试 WebGPU，失败则切 WASM，而不是直接放弃。\n失败原因要收集起来，在控制台或界面上给出可读的提示。\n用户手动切换后端的能力也很重要：调试、对比性能、以及在某些驱动上 WebGPU 反而不如 WASM 时，可以强制使用 WASM。\n验证降级路径需要构造无 WebGPU 的环境。\n最简单的办法是加一个 URL 参数，例如 ?\nbackend=wasm，初始化时直接跳过 WebGPU；\n再用无头浏览器或禁用 GPU 的浏览器打开，确认模型能加载、检索能完成、界面提示正确。\n只测试成功路径的降级逻辑，等于没有测试。",
+          "lang": "zh",
+          "chars": 367
+        }
+      ]
+    },
+    {
+      "docName": "10-evaluation.md",
+      "docId": "0r7a8om",
+      "chunks": [
+        {
+          "id": "0r7a8om#0",
+          "docId": "0r7a8om",
+          "docName": "10-evaluation.md",
+          "index": 0,
+          "total": 2,
+          "text": "检索质量评估方法\n检索质量评估需要三样东西：固定的语料、带标注的查询集、明确的指标。\n语料固定后，每次实验的候选集合一致；\n查询集里每条查询标注相关文档；\n指标把排序结果换算成一个可比较的数字。\n最常用的指标是 Recall@K。\n它衡量前 K 个结果里覆盖了多少相关文档，适合“不能漏”的场景。\nnDCG@K 考虑排序位置，越相关的文档排得越靠前得分越高，适合“排序质量”评估。\nMRR 只看第一个相关结果的名次，适合问答类单答案场景。\n三者一起看，能避免被单一指标误导。\n做量化对比时，评测集必须完全相同，查询和文档的编码方式也要一致。\n比如查询统一加 BGE 指令前缀，文档不加；\n池化统一用 CLS；\n归一化统一开启。\n任何一处不一致，指标差异都可能来自流程而不是量化。\n评估粒度也要说清楚。\n按文档评估时，先对同一文档的多个分块取最高分，再对文档排序；\n按分块评估时，直接对分块排序。",
+          "lang": "zh",
+          "chars": 397
+        },
+        {
+          "id": "0r7a8om#1",
+          "docId": "0r7a8om",
+          "docName": "10-evaluation.md",
+          "index": 1,
+          "total": 2,
+          "text": "评估粒度也要说清楚。\n按文档评估时，先对同一文档的多个分块取最高分，再对文档排序；\n按分块评估时，直接对分块排序。\n前者更接近用户感知（用户关心哪篇文档相关），后者更适合调分块策略。\n本项目同时记录两种口径，主指标用文档级。\n除了平均值，还要看最差情况。\n量化可能让少数查询的相关文档掉出前 K，平均值看不出这一点。\n报告里应给出指标的最小值、掉点查询列表，以及量化前后的排名变化。\n如果掉点集中在某类查询（例如包含数字或英文缩写的查询），可以针对性调整。\n最后，评估脚本要可复现：语料和查询集入库，脚本一条命令跑完，输出 JSON 原始数据。\n技术说明里的表格应该由这份 JSON 生成，而不是手工填写。\n评审如果能自己跑一遍脚本并得到同样的数字，可信度会高很多。",
+          "lang": "zh",
+          "chars": 333
+        }
+      ]
+    },
+    {
+      "docName": "11-performance.md",
+      "docId": "0h0ft2h",
+      "chunks": [
+        {
+          "id": "0h0ft2h#0",
+          "docId": "0h0ft2h",
+          "docName": "11-performance.md",
+          "index": 0,
+          "total": 2,
+          "text": "性能优化实践\n端侧知识库的性能可以拆成五段：模型下载与加载、文档向量化、写入与索引刷新、查询向量化、检索排序。\n分阶段计时比只报一个端到端数字更有诊断价值，因为优化手段完全不同。\n模型加载的优化点包括：把模型文件放在本地静态目录，避免公网 CDN；\n开启 HTTP 缓存；\n不要每次查询都重建 pipeline。\n加载完成后做一次预热推理，把 shader 编译和缓冲区分配的成本提前付掉。\n报告时应区分冷加载和预热后的状态。\n文档向量化的优化点是批处理和进度反馈。\n批大小 8 到 16 通常能跑满 CPU 或 GPU；\n批太大反而增加内存压力和首条延迟。\n每批完成后更新进度条，用户不会觉得界面卡死。\n吞吐用“块/秒”和“字符/秒”两个口径报告，因为分块长度会变化。\n写入与索引刷新的优化点是减少往返。\n把分块按 100 条一批 upsert，最后一次 refresh_index。\n如果每写一条就刷新，索引维护成本会主导总耗时。",
+          "lang": "zh",
+          "chars": 417
+        },
+        {
+          "id": "0h0ft2h#1",
+          "docId": "0h0ft2h",
+          "docName": "11-performance.md",
+          "index": 1,
+          "total": 2,
+          "text": "把分块按 100 条一批 upsert，最后一次 refresh_index。\n如果每写一条就刷新，索引维护成本会主导总耗时。\n导入大文件时，可以先写完所有批次再刷新，刷新期间界面提示“索引合并中”。\n查询路径的优化点是减少不必要的计算。\n查询只编码一次，向量复用；\n检索只发一次 hybridSearch，不在客户端做二次排序；\nTopK 控制在合理范围，候选窗口不要无限放大。\n端到端延迟 = 查询向量化 + 网络往返 + 数据库检索 + 前端渲染，四段都要单独记录。\n复测时要固定设备、浏览器版本、语料、查询集、批大小和后端。\n同一份代码在不同机器上差异可能很大，报告里必须写清楚环境。\n每个实验至少重复 3 轮，报告中位数，同时给出 P95，避免只挑最快的一次。\n首次请求和预热后要分开报告。\n最后，优化不能以牺牲检索质量为代价。\n每次性能改动后重跑质量评估；\n如果 Recall@K 明显下降，说明优化改变了语义，需要回滚或补偿。",
+          "lang": "zh",
+          "chars": 420
+        }
+      ]
+    },
+    {
+      "docName": "12-incremental-state.md",
+      "docId": "1367w62",
+      "chunks": [
+        {
+          "id": "1367w62#0",
+          "docId": "1367w62",
+          "docName": "12-incremental-state.md",
+          "index": 0,
+          "total": 3,
+          "text": "增量导入、集合与会话状态\n知识库应用通常会经历多次导入：先导入一批笔记，过几天再补充论文，最后再导入会议记录。\n增量导入要求新数据能追加、旧数据不重复、检索结果始终对应当前知识库。\n幂等键的设计是关键。\n分块 ID 用“文档内容哈希 + 分块序号”生成：同一篇文档重复导入时 ID 不变，upsert 会覆盖旧记录；\n文档内容修改后哈希变化，旧分块不会自动删除，需要额外的清理策略。\n对演示应用来说，覆盖已经足够；\n生产环境应记录文档版本，并在导入后删除同文档的过期分块。\n集合（collection）是 seekdb 里组织和检索数据的单位。\n每个知识库对应一个集合，集合名带随机后缀避免冲突。\n集合里保存向量、原文和元数据，元数据包括文档名、分块序号、语言和字符数。\n查询时按集合隔离，切换知识库就是切换集合。\n会话状态包括“当前选中的知识库”“最近一次查询”“界面上的计时数据”。",
+          "lang": "zh",
+          "chars": 393
+        },
+        {
+          "id": "1367w62#1",
+          "docId": "1367w62",
+          "docName": "12-incremental-state.md",
+          "index": 1,
+          "total": 3,
+          "text": "查询时按集合隔离，切换知识库就是切换集合。\n会话状态包括“当前选中的知识库”“最近一次查询”“界面上的计时数据”。\n这些状态可以放在 localStorage 和内存里，但要保证刷新页面后能恢复到一个一致的状态：如果记住的知识库已被删除，应自动回退到第一个可用集合，而不是继续向不存在的集合发查询。\n连续操作容易出错的地方是竞态。\n用户在导入过程中切换知识库，导入任务仍在往旧集合写；\n用户在查询过程中删除集合，查询会报错。\n解决办法是让异步任务捕获开始时的集合 ID，完成后只在“仍然是当前集合”时更新界面；\n删除集合时取消或忽略进行中的请求。\n检索结果的一致性还依赖索引刷新。\n导入完成后必须刷新，否则新分块查不到；\n刷新是异步语义，界面要等刷新返回后再提示“可检索”。\n如果导入和查询并发，应该让查询等待刷新完成，或者明确提示“索引合并中，结果可能不完整”。",
+          "lang": "zh",
+          "chars": 382
+        },
+        {
+          "id": "1367w62#2",
+          "docId": "1367w62",
+          "docName": "12-incremental-state.md",
+          "index": 2,
+          "total": 3,
+          "text": "刷新是异步语义，界面要等刷新返回后再提示“可检索”。\n如果导入和查询并发，应该让查询等待刷新完成，或者明确提示“索引合并中，结果可能不完整”。\n最后，把所有状态变化记录到界面：当前集合、分块数、最后刷新时间、最近一次导入耗时。\n用户和评审都能一眼看出数据是不是最新的。",
+          "lang": "zh",
+          "chars": 134
+        }
+      ]
+    },
+    {
+      "docName": "13-hybrid-search-en.md",
+      "docId": "03pz52g",
+      "chunks": [
+        {
+          "id": "03pz52g#0",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 0,
+          "total": 9,
+          "text": "Hybrid search inside seekdb\nseekdb is an AI-native database from OceanBase. It keeps relational data, vector indexes and full-text indexes in one engine, so an application can run semantic and keyword retrieval against the same table without a second datastore.",
+          "lang": "en",
+          "chars": 261
+        },
+        {
+          "id": "03pz52g#1",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 1,
+          "total": 9,
+          "text": "The vector column is declared as VECTOR(n) and indexed with HNSW. HNSW builds a multi-layer proximity graph: queries start at a sparse upper layer, greedily move toward the closest node, then descend layer by layer. Compared with a brute-force scan, it trades a small amount of recall for a large reduction in latency. The main tuning knobs are M (neighbour count), ef_construction (build-time candidate list) and ef_sea",
+          "lang": "en",
+          "chars": 420
+        },
+        {
+          "id": "03pz52g#2",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 2,
+          "total": 9,
+          "text": "are M (neighbour count), ef_construction (build-time candidate list) and ef_sea\nrch (query-time candidate list).\nThe full-text index uses a parser. For Chinese text, the ik parser recognises compound words, while ngram splits text into fixed-length windows. The chosen parser is recorded in the table definition, for example FULLTEXT KEY idx_fts (document) WITH PARSER ik.",
+          "lang": "en",
+          "chars": 372
+        },
+        {
+          "id": "03pz52g#3",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 3,
+          "total": 9,
+          "text": "he table definition, for example FULLTEXT KEY idx_fts (document) WITH PARSER ik.\nDBMS_HYBRID_SEARCH fuses the two retrieval paths. The caller stores a JSON search description in search_parm, then the function generates the SQL that runs the full-text query, the kNN query and the rank fusion. With the JavaScript SDK this is a single call:\ncollection.hybridSearch({",
+          "lang": "en",
+          "chars": 365
+        },
+        {
+          "id": "03pz52g#4",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 4,
+          "total": 9,
+          "text": "collection.hybridSearch({\nquery: { whereDocument: { $contains: \"vector index\" }, nResults: 80 },\nknn: { queryEmbeddings: embedding, nResults: 80 },\nrank: { rrf: { rankWindowSize: 80, rankConstant: 60 } },\nnResults: 10\n});",
+          "lang": "en",
+          "chars": 221
+        },
+        {
+          "id": "03pz52g#5",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 5,
+          "total": 9,
+          "text": "{ rrf: { rankWindowSize: 80, rankConstant: 60 } },\nnResults: 10\n});\nRRF, reciprocal rank fusion, scores each candidate as the sum of 1 / (k + rank) across the two lists. It only uses ranks, so a cosine distance and a BM25 score never need to be normalised onto the same scale. The constant k is usually 60. A larger window gives the fusion more candidates and usually improves recall, at the cost of a little extra work.",
+          "lang": "en",
+          "chars": 420
+        },
+        {
+          "id": "03pz52g#6",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 6,
+          "total": 9,
+          "text": "more candidates and usually improves recall, at the cost of a little extra work.\nKeeping the fusion inside the database matters for consistency. If the client fetched two lists and merged them itself, the two queries could see different snapshots, apply different filters, or paginate inconsistently. Running one database query keeps a single view of the data and lets the engine push filters down.",
+          "lang": "en",
+          "chars": 398
+        },
+        {
+          "id": "03pz52g#7",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 7,
+          "total": 9,
+          "text": "ase query keeps a single view of the data and lets the engine push filters down.\nIndex refresh controls visibility. Newly written rows go into an incremental structure and become searchable after refresh_index(). An import pipeline should write in batches, refresh once at the end, and only then tell the user that the new documents are searchable.",
+          "lang": "en",
+          "chars": 348
+        },
+        {
+          "id": "03pz52g#8",
+          "docId": "03pz52g",
+          "docName": "13-hybrid-search-en.md",
+          "index": 8,
+          "total": 9,
+          "text": "e at the end, and only then tell the user that the new documents are searchable.\nThis knowledge-base demo keeps embeddings on the client: the browser encodes documents with a quantized ONNX model, sends vectors and text to a local Node service, and the service stores them in seekdb. Retrieval is one hybridSearch call, so the ranking shown in the UI is exactly the ranking produced by the database.",
+          "lang": "en",
+          "chars": 399
+        }
+      ]
+    },
+    {
+      "docName": "14-privacy-faq.md",
+      "docId": "0ad1z2m",
+      "chunks": [
+        {
+          "id": "0ad1z2m#0",
+          "docId": "0ad1z2m",
+          "docName": "14-privacy-faq.md",
+          "index": 0,
+          "total": 3,
+          "text": "隐私、离线与常见问题\n文档会上传到云端吗？\n不会。\n浏览器读取文件后，在本地完成分块和向量化，只把文本和向量发给本机运行的 Node 服务，再由服务写入本机 seekdb。\n整个过程没有调用任何云端推理接口。\n如果应用部署在远程服务器，文本会经过局域网或公网传输到数据库，但模型推理仍然发生在浏览器，且部署方应明确告知数据传输范围。\n模型文件从哪里来？\n来自 Hugging Face 上 Xenova/bge-small-zh-v1.5 的 ONNX 转换版，ModelScope 有同一仓库的镜像。\n本项目下载 FP32 权重后自行做 INT8 动态量化，量化后的文件随应用一起分发，运行时不访问模型仓库。\n为什么第一次打开很慢？\n首次需要下载约 24MB 的 INT8 模型、初始化 ONNX Runtime、编译 WebGPU shader 或加载 WASM 模块。\n加载完成后会做一次预热推理，之后的查询只需要几十毫秒。",
+          "lang": "zh",
+          "chars": 415
+        },
+        {
+          "id": "0ad1z2m#1",
+          "docId": "0ad1z2m",
+          "docName": "14-privacy-faq.md",
+          "index": 1,
+          "total": 3,
+          "text": "加载完成后会做一次预热推理，之后的查询只需要几十毫秒。\n模型文件带 HTTP 缓存，第二次打开会快很多。\n没有 WebGPU 怎么办？\n应用会自动降级到 WASM，界面顶部会显示黄色提示和当前后端。\nWASM 路径使用多线程（需要跨源隔离）和 SIMD，单条查询通常在几百毫秒内完成，功能与 WebGPU 完全一致。\n为什么检索结果里有不相关的文档？\n全文检索按词项匹配，中文分词可能把一个词拆成更小的单位，导致部分匹配；\n向量检索则可能因为语义泛化召回相近主题。\n混合检索用 RRF 融合两路，通常能把真正相关的结果排在前面。\n可以切换“向量”或“全文”模式对比两路效果。\n支持图片吗？\n当前版本聚焦文本知识库。\n图片需要多模态模型（如 CLIP）生成向量，索引结构可以复用，但模型体积和推理成本会明显增加，因此没有纳入基础版本。\n数据存在哪里？",
+          "lang": "zh",
+          "chars": 374
+        },
+        {
+          "id": "0ad1z2m#2",
+          "docId": "0ad1z2m",
+          "docName": "14-privacy-faq.md",
+          "index": 2,
+          "total": 3,
+          "text": "当前版本聚焦文本知识库。\n图片需要多模态模型（如 CLIP）生成向量，索引结构可以复用，但模型体积和推理成本会明显增加，因此没有纳入基础版本。\n数据存在哪里？\n存在本机 seekdb 的数据库目录里，集合名形如 kb_xxxxxxxx，包含向量列、原文和 JSON 元数据。\n删除知识库会删除对应集合及其索引。",
+          "lang": "zh",
+          "chars": 155
+        }
+      ]
+    }
+  ],
+  "chunkCount": 49,
+  "charCount": 15098,
+  "chunks": [
+    {
+      "id": "0c1hd3d#0",
+      "docId": "0c1hd3d",
+      "docName": "01-seekdb-overview.md",
+      "index": 0,
+      "total": 3,
+      "text": "seekdb 概览\nseekdb 是 OceanBase 推出的 AI 原生数据库，定位是把向量检索、全文检索和关系型数据放在同一个引擎里。\n它兼容 MySQL 协议，现有 MySQL 客户端、ORM 和 SQL 工具可以直接连接，因此业务系统不需要为了向量能力再引入一套独立的向量数据库。\nseekdb 有两种使用方式。\n第一种是嵌入式模式，数据库以库的形式链接进应用进程，适合桌面应用、CLI 工具和单机服务，数据目录通常是一个本地路径。\n第二种是服务器模式，seekdb 以独立进程运行并监听端口（默认 2881），应用通过 MySQL 协议连接。\n本知识库示例使用服务器模式，方便浏览器应用与数据库进程分离部署。\n在 AI 能力方面，seekdb 提供 VECTOR 类型、HNSW 向量索引、FULLTEXT 全文索引，以及 DBMS_HYBRID_SEARCH 这样的混合检索函数。",
+      "lang": "zh",
+      "chars": 397
+    },
+    {
+      "id": "0c1hd3d#1",
+      "docId": "0c1hd3d",
+      "docName": "01-seekdb-overview.md",
+      "index": 1,
+      "total": 3,
+      "text": "向量索引支持 cosine、l2 和 inner_product 三种距离度量；\n全文索引支持 space、ngram、ngram2、beng、ik 等分词器，其中 ik 适合中文分词。\n对端侧 AI 应用来说，seekdb 的价值在于数据边界清晰：用户文档和向量都留在本地数据库里，浏览器只负责把文本编码成向量，数据库负责存储、索引和排序。\n这样既满足了隐私要求，也避免了把检索逻辑拆成两套系统。\nseekdb 的版本可以通过 SELECT VERSION() 查看，返回结果类似 5.7.25-OceanBase seekdb-v1.4.0.0。\n这个版本号同时说明了 MySQL 兼容版本和 seekdb 自身的版本，排查驱动兼容性问题时很有用。\n在部署上，seekdb 允许通过参数控制数据文件、日志盘、内存等资源。\n单机演示通常给 1GB 数据文件和 2GB 日志盘即可；\n生产环境再按数据量调整。",
+      "lang": "zh",
+      "chars": 404
+    },
+    {
+      "id": "0c1hd3d#2",
+      "docId": "0c1hd3d",
+      "docName": "01-seekdb-overview.md",
+      "index": 2,
+      "total": 3,
+      "text": "在部署上，seekdb 允许通过参数控制数据文件、日志盘、内存等资源。\n单机演示通常给 1GB 数据文件和 2GB 日志盘即可；\n生产环境再按数据量调整。\n需要注意的是，长期运行的实例不要随意重装，否则实例标识会变化，依赖该标识的遥测或授权状态可能失效。",
+      "lang": "zh",
+      "chars": 127
+    },
+    {
+      "id": "0epsx2j#0",
+      "docId": "0epsx2j",
+      "docName": "02-vector-hnsw.md",
+      "index": 0,
+      "total": 4,
+      "text": "向量检索与 HNSW 索引\n向量检索的基本流程是：把文本、图片或其他对象编码成固定维度的稠密向量，查询时把查询对象编码成同维度向量，然后在向量集合里找距离最近的前 K 个结果。\n向量维度由 embedding 模型决定，例如 bge-small-zh-v1.5 输出 512 维，all-MiniLM-L6-v2 输出 384 维。\nseekdb 用 VECTOR(n) 类型保存向量，n 是维度。\n建表时可以声明向量索引，例如：\nCREATE TABLE chunks (\nid VARCHAR(64) PRIMARY KEY,\ndocument TEXT,\nembedding VECTOR(512),\nmetadata JSON,\nVECTOR KEY idx_vec (embedding) WITH (DISTANCE=COSINE, TYPE=HNSW)\n);",
+      "lang": "zh",
+      "chars": 386
+    },
+    {
+      "id": "0epsx2j#1",
+      "docId": "0epsx2j",
+      "docName": "02-vector-hnsw.md",
+      "index": 1,
+      "total": 4,
+      "text": "VECTOR KEY idx_vec (embedding) WITH (DISTANCE=COSINE, TYPE=HNSW)\n);\nHNSW 是分层可导航小世界图（Hierarchical Navigable Small World）。\n它把向量组织成多层图：顶层稀疏、底层稠密。\n查询从顶层的一个入口点开始做贪心搜索，找到局部最近点后下降到下一层继续搜索，直到最底层得到候选集合。\n相比全量扫描，HNSW 用少量召回损失换来了数量级的延迟下降。\n影响 HNSW 的关键参数包括 M（每个节点的邻居数）、ef_construction（建索引时的候选队列长度）和 ef_search（查询时的候选队列长度）。\nM 越大，图连接越密，召回越高但内存和构建时间也越大；\nef_search 越大，查询越准但越慢。\n实际调优时先在固定数据集上测 Recall@K，再逐步降低 ef_search，找到质量与延迟的平衡点。",
+      "lang": "zh",
+      "chars": 409
+    },
+    {
+      "id": "0epsx2j#2",
+      "docId": "0epsx2j",
+      "docName": "02-vector-hnsw.md",
+      "index": 2,
+      "total": 4,
+      "text": "ef_search 越大，查询越准但越慢。\n实际调优时先在固定数据集上测 Recall@K，再逐步降低 ef_search，找到质量与延迟的平衡点。\n距离度量要和 embedding 的训练方式匹配。\nbge 系列和大多数句向量模型使用余弦相似度，因此建索引时选择 COSINE。\n若模型输出已经归一化，余弦相似度与内积排序等价，但显式声明 COSINE 更不容易出错。\nl2 适合未归一化的特征向量。\n向量索引是异步维护的。\n新写入的行先进入增量结构，只有执行刷新（refresh index）后才会合并进可检索的索引。\n很多“写完立刻查不到”的问题都源于忽略了这一步。\n应用应在一次导入结束后显式刷新，或者按固定时间窗口批量刷新，兼顾写入吞吐和查询可见性。",
+      "lang": "zh",
+      "chars": 330
+    },
+    {
+      "id": "0epsx2j#3",
+      "docId": "0epsx2j",
+      "docName": "02-vector-hnsw.md",
+      "index": 3,
+      "total": 4,
+      "text": "很多“写完立刻查不到”的问题都源于忽略了这一步。\n应用应在一次导入结束后显式刷新，或者按固定时间窗口批量刷新，兼顾写入吞吐和查询可见性。\n在 seekdb-js 中，collection.query({ queryEmbeddings, nResults }) 会执行向量近邻查询，返回 ids、documents、metadatas 和 distances。\ndistances 的含义取决于距离度量：cosine 距离越小越相似，换算成相似度为 1 - distance。",
+      "lang": "zh",
+      "chars": 238
+    },
+    {
+      "id": "1hcvn7l#0",
+      "docId": "1hcvn7l",
+      "docName": "03-fulltext-ik.md",
+      "index": 0,
+      "total": 3,
+      "text": "全文索引与中文分词\n全文检索解决的是“关键词匹配”问题：把文档切成词项，建立词项到文档的倒排表，查询时对词项求交并计算相关性。\n它和向量检索互补——向量擅长语义相近但用词不同的情况，全文擅长精确术语、编号、人名和代码符号。\nseekdb 的全文索引通过 FULLTEXT KEY ... WITH PARSER 指定分词器。\n英文可以用空格分词，中文则需要专门的分词器：ngram 按固定长度滑窗切分，实现简单但会产生较多无意义词项；\nik 基于词典和统计模型，能识别“向量数据库”“倒排索引”这类复合词，检索质量和索引体积都更均衡。\n创建集合时可以指定全文分析器。\n使用 seekdb-js 时，configuration 里可以写：\nconfiguration: {\nhnsw: { dimension: 512, distance: \"cosine\" },",
+      "lang": "zh",
+      "chars": 381
+    },
+    {
+      "id": "1hcvn7l#1",
+      "docId": "1hcvn7l",
+      "docName": "03-fulltext-ik.md",
+      "index": 1,
+      "total": 3,
+      "text": "configuration: {\nhnsw: { dimension: 512, distance: \"cosine\" },\nfulltextConfig: { analyzer: \"ik\", properties: { ik_mode: \"smart\" } }\n}\n建表语句里会体现为 FULLTEXT KEY idx_fts (document) WITH PARSER ik PARSER_PROPERTIES=(ik_mode=\"smart\")。\n如果运行环境没有启用 ik，SDK 会回退到 ngram，这时应在元数据里记录实际使用的分析器，避免评估时误判。\n查询时，seekdb-js 的 whereDocument: { $contains: \"...\" } 会被转换成 query_string 查询。",
+      "lang": "zh",
+      "chars": 359
+    },
+    {
+      "id": "1hcvn7l#2",
+      "docId": "1hcvn7l",
+      "docName": "03-fulltext-ik.md",
+      "index": 2,
+      "total": 3,
+      "text": "查询时，seekdb-js 的 whereDocument: { $contains: \"...\" } 会被转换成 query_string 查询。\nquery_string 支持布尔运算符和通配符，因此用户输入要先做清洗：去掉引号、冒号、括号、加减号等特殊字符，否则一个多余的引号就可能让查询变成语法错误。\n清洗后仍然保留空格，让分词器自行处理。\n中文检索的质量很大程度取决于分词粒度。\n以“向量检索”为例，ik 可能切成“向量 / 检索”，于是包含“全文检索”的文档也会命中“检索”。\n这是词法检索的固有特性，也是混合检索要引入向量一路的原因：RRF 会让两路都靠前的结果胜出，单一词项误匹配很难同时骗过两路。\n全文索引同样需要刷新才能看到新写入的内容。\n批量导入时，把文档写入和索引刷新分开计时，可以清楚看到“写入耗时”和“可见性延迟”各自占多少。",
+      "lang": "zh",
+      "chars": 377
+    },
+    {
+      "id": "1r6lfr9#0",
+      "docId": "1r6lfr9",
+      "docName": "04-hybrid-rrf.md",
+      "index": 0,
+      "total": 4,
+      "text": "混合检索与 RRF 融合\n混合检索把向量近邻和全文匹配两路结果合并成一个排名。\n常见的融合方式有两种：加权分数融合和排名融合。\n加权分数融合需要把余弦距离和 BM25 分数映射到同一量纲，调参成本高；\n排名融合只使用名次，天然不受分数量纲影响，其中 RRF（Reciprocal Rank Fusion，倒数排名融合）最常用。\nRRF 的公式是：对每个候选文档，累加每一路里的 1 / (k + rank)，其中 rank 从 1 开始，k 是平滑常数，通常取 60。\n两路都排在前面的文档得分最高；\n只在一路出现的文档也能获得基础分。\nk 越大，排名差异被抹得越平；\nk 越小，头部结果的优势越明显。\n在 seekdb 中，混合检索由数据库函数 DBMS_HYBRID_SEARCH 完成。\n调用方把查询描述写进会话变量 search_parm，再用 GET_SQL 生成实际查询语句。",
+      "lang": "zh",
+      "chars": 394
+    },
+    {
+      "id": "1r6lfr9#1",
+      "docId": "1r6lfr9",
+      "docName": "04-hybrid-rrf.md",
+      "index": 1,
+      "total": 4,
+      "text": "调用方把查询描述写进会话变量 search_parm，再用 GET_SQL 生成实际查询语句。\nsearch_parm 里包含 query（全文条件）、knn（向量条件）、rank（融合方式）和 size（返回条数）。\n数据库在一次查询里完成两路召回与融合，客户端拿到的已经是最终排名。\n使用 seekdb-js 时不需要手写这些 SQL，调用：\ncollection.hybridSearch({\nquery: { whereDocument: { $contains: \"混合检索\" }, nResults: 120 },\nknn: { queryEmbeddings: vector, nResults: 120 },\nrank: { rrf: { rankWindowSize: 120, rankConstant: 60 } },\nnResults: 10,",
+      "lang": "zh",
+      "chars": 384
+    },
+    {
+      "id": "1r6lfr9#2",
+      "docId": "1r6lfr9",
+      "docName": "04-hybrid-rrf.md",
+      "index": 2,
+      "total": 4,
+      "text": "rank: { rrf: { rankWindowSize: 120, rankConstant: 60 } },\nnResults: 10,\ninclude: [\"documents\", \"metadatas\", \"distances\"]\n});\nrankWindowSize 决定每一路进入融合的候选数量，它应该大于最终返回条数，否则融合空间太小。\n经验上取 max(60, topK * 8)。\nrankConstant 对应公式里的 k。\n为什么强调“在数据库内融合”？\n如果客户端分别取两路结果再自己拼合，会引入三个问题：两路的分页和过滤条件容易不一致；\n候选集大小受网络往返限制；\n无法利用数据库的过滤下推。\n把融合放进数据库，才能保证同一事务视图、同一过滤条件和稳定的排名。\n评估混合检索时，要分别记录向量路、全文路和融合后的指标。",
+      "lang": "zh",
+      "chars": 373
+    },
+    {
+      "id": "1r6lfr9#3",
+      "docId": "1r6lfr9",
+      "docName": "04-hybrid-rrf.md",
+      "index": 3,
+      "total": 4,
+      "text": "无法利用数据库的过滤下推。\n把融合放进数据库，才能保证同一事务视图、同一过滤条件和稳定的排名。\n评估混合检索时，要分别记录向量路、全文路和融合后的指标。\n融合通常能提升 Recall@K 和 nDCG，但如果两路质量差距过大，融合也可能被弱的一路拖累，这时应调整候选窗口或降低弱路的权重。",
+      "lang": "zh",
+      "chars": 144
+    },
+    {
+      "id": "0t532tz#0",
+      "docId": "0t532tz",
+      "docName": "05-seekdb-js.md",
+      "index": 0,
+      "total": 4,
+      "text": "seekdb-js 数据层接入\nseekdb-js 是官方 Node.js 客户端，支持嵌入式和服务端两种连接方式。\n服务端模式只需要 host、port、user、password 和 database：\nimport { SeekdbClient } from \"seekdb\";\nconst client = new SeekdbClient({\nhost: \"127.0.0.1\", port: 2881, user: \"root\", password: \"\", database: \"stepfun_kb\"\n});\n创建集合时要显式传入 embeddingFunction: null。\n这是因为 SDK 默认会寻找名为 default-embed 的嵌入函数；\n本项目的向量全部在浏览器里算好，服务端不应该再加载一个模型。",
+      "lang": "zh",
+      "chars": 367
+    },
+    {
+      "id": "0t532tz#1",
+      "docId": "0t532tz",
+      "docName": "05-seekdb-js.md",
+      "index": 1,
+      "total": 4,
+      "text": "这是因为 SDK 默认会寻找名为 default-embed 的嵌入函数；\n本项目的向量全部在浏览器里算好，服务端不应该再加载一个模型。\n把维度写在 configuration 里，SDK 会据此创建 VECTOR(512) 列和 HNSW 索引。\n写入使用 collection.add 或 collection.upsert。\nupsert 的语义是“存在则覆盖、不存在则插入”，非常适合增量导入：分块 ID 由文档内容哈希和序号生成，同一个文件重复导入不会产生重复数据。\n写入支持批量，一次几十到几百条比逐条写入快得多，因为减少了网络往返和事务开销。\ncollection.refresh_index() 是让新数据立即可检索的关键。\n它会把增量数据合并进索引。\n刷新本身有成本，所以策略上应该“批量写完再刷新”，而不是每写一条刷新一次。\n本项目每次导入提交后刷新一次，并在界面上单独展示写入耗时和刷新耗时。\n查询接口主要有三个。",
+      "lang": "zh",
+      "chars": 418
+    },
+    {
+      "id": "0t532tz#2",
+      "docId": "0t532tz",
+      "docName": "05-seekdb-js.md",
+      "index": 2,
+      "total": 4,
+      "text": "本项目每次导入提交后刷新一次，并在界面上单独展示写入耗时和刷新耗时。\n查询接口主要有三个。\ncollection.query 只做向量近邻；\ncollection.hybridSearch 做全文加向量的融合；\ncollection.get 按 ID 或过滤条件取回记录。\n所有查询都支持 include 参数控制返回字段，只取需要的字段可以减少序列化开销。\n集合元数据保存在数据库内部的元数据表里，SDK 通过 collectionId 定位实际的数据表。\n数据表名通常形如 c$v2$<uuid>，因此不要硬编码表名；\n要用 DDL 证据时，可以查 information_schema 里的表名，再执行 SHOW CREATE TABLE 和 SHOW INDEX。\n连接池和超时也值得注意。\n服务端模式底层使用 mysql2，长时间运行的 Node 进程应复用同一个 client，而不是每个请求新建连接。",
+      "lang": "zh",
+      "chars": 407
+    },
+    {
+      "id": "0t532tz#3",
+      "docId": "0t532tz",
+      "docName": "05-seekdb-js.md",
+      "index": 3,
+      "total": 4,
+      "text": "连接池和超时也值得注意。\n服务端模式底层使用 mysql2，长时间运行的 Node 进程应复用同一个 client，而不是每个请求新建连接。\n查询超时可以通过构造参数设置，避免慢查询把请求堆积住。",
+      "lang": "zh",
+      "chars": 98
+    },
+    {
+      "id": "1fqjx4d#0",
+      "docId": "1fqjx4d",
+      "docName": "06-on-device-inference.md",
+      "index": 0,
+      "total": 3,
+      "text": "浏览器端侧推理\n端侧推理指模型在用户设备上执行，输入数据不离开设备。\n对知识库应用来说，这意味着用户导入的文档只在本地被编码，不会上传到云端；\n即使应用部署在公网，推理仍然发生在浏览器里。\n在浏览器里跑 Transformer 模型有两种主流方案。\nTransformers.js 提供与 Python transformers 类似的 pipeline API，封装了分词、模型加载、池化和归一化；\nONNX Runtime Web 更底层，直接执行 ONNX 计算图。\nTransformers.js 内部就用 ONNX Runtime Web 作为执行引擎，所以两者可以混用：用 Transformers.js 处理文本，用 ORT 的 session options 调优执行后端。\n执行后端主要有 WebGPU 和 WASM。\nWebGPU 把矩阵运算交给 GPU，适合较大的 batch；",
+      "lang": "zh",
+      "chars": 400
+    },
+    {
+      "id": "1fqjx4d#1",
+      "docId": "1fqjx4d",
+      "docName": "06-on-device-inference.md",
+      "index": 1,
+      "total": 3,
+      "text": "执行后端主要有 WebGPU 和 WASM。\nWebGPU 把矩阵运算交给 GPU，适合较大的 batch；\nWASM 用 CPU 执行，兼容性最好，但吞吐较低。\n正确的策略是“优先 WebGPU，失败自动降级 WASM”，并把当前后端明确展示给用户，而不是静默切换。\n模型文件通过 fetch 加载，ONNX 权重通常有几十 MB。\n加载时间包括网络传输、解析计算图和初始化执行后端。\n首次加载明显慢于后续加载，因此性能报告要区分首次与预热后。\n浏览器 HTTP 缓存、Cache Storage 和 Service Worker 都可以减少重复下载，但要注意模型更新后的缓存失效。\n推理时的批大小需要权衡。\n批越大，单条平均耗时越低，但首条结果的等待时间越长，显存或内存占用也越高。\n交互式应用通常用 8 到 16 的小批量，并在导入时按批推进进度条；\n查询时 batch 固定为 1，优先保证低延迟。\n线程数也会影响 WASM 性能。",
+      "lang": "zh",
+      "chars": 420
+    },
+    {
+      "id": "1fqjx4d#2",
+      "docId": "1fqjx4d",
+      "docName": "06-on-device-inference.md",
+      "index": 2,
+      "total": 3,
+      "text": "交互式应用通常用 8 到 16 的小批量，并在导入时按批推进进度条；\n查询时 batch 固定为 1，优先保证低延迟。\n线程数也会影响 WASM 性能。\n多线程 WASM 需要 SharedArrayBuffer，而 SharedArrayBuffer 要求页面开启跨源隔离，即响应头包含 Cross-Origin-Opener-Policy: same-origin 和 Cross-Origin-Embedder-Policy: require-corp。\n不开这两个头，ORT 只能单线程运行。\n开启后还要确认所有静态资源都带正确的 CORP 头，否则会被浏览器拦截。\n最后是降级路径的验证。\n只在支持 WebGPU 的机器上测试是不够的，必须在不支持 WebGPU 的环境里跑一遍完整流程：模型能加载、向量能生成、检索能返回结果、界面明确提示当前使用 WASM。",
+      "lang": "zh",
+      "chars": 385
+    },
+    {
+      "id": "0i9nmv4#0",
+      "docId": "0i9nmv4",
+      "docName": "07-int8-quantization.md",
+      "index": 0,
+      "total": 3,
+      "text": "ONNX INT8 动态量化\n量化是把浮点权重映射到低比特整数的过程。\n对 Transformer 来说，权重占模型体积的绝大部分，把 FP32 权重换成 INT8，理论上体积可以降到四分之一。\n实际文件还会包含缩放因子、零点和非量化算子，因此压缩比略低于 4。\nONNX Runtime 提供动态量化（dynamic quantization）。\n它只量化权重，激活值在推理时根据实际数值动态计算缩放因子。\n优点是校准简单，不需要代表性数据集；\n缺点是推理时多了一点计算量。\n对本项目这种“权重远大于激活”的小模型，动态量化是性价比最高的选择。\n动态量化的关键参数是权重类型和是否逐通道。\n权重类型选 QUInt8（无符号 8 位整数）通常比 QInt8 更稳，因为激活和权重的零点分布更自然。\n逐通道（per-channel）为每个输出通道单独计算缩放因子，精度明显优于逐张量。",
+      "lang": "zh",
+      "chars": 391
+    },
+    {
+      "id": "0i9nmv4#1",
+      "docId": "0i9nmv4",
+      "docName": "07-int8-quantization.md",
+      "index": 1,
+      "total": 3,
+      "text": "逐通道（per-channel）为每个输出通道单独计算缩放因子，精度明显优于逐张量。\n实测中，QInt8 逐通道且不缩小范围时，句向量余弦相似度会降到 0.84，而 QUInt8 逐通道可以保持 0.994，这说明量化配置不能照抄，必须实测。\n量化的产物仍然是标准 ONNX 文件，浏览器不需要额外的反量化代码。\nONNX Runtime Web 的 WASM 后端支持 MatMulInteger 等量化算子，Transformers.js 通过 dtype 选择文件名：fp32 对应 model.onnx，fp16 对应 model_fp16.onnx，int8 对应 model_int8.onnx，q8 对应 model_quantized.onnx。\n评估量化不能只看困惑度或单句相似度，还要看检索指标。",
+      "lang": "zh",
+      "chars": 358
+    },
+    {
+      "id": "0i9nmv4#2",
+      "docId": "0i9nmv4",
+      "docName": "07-int8-quantization.md",
+      "index": 2,
+      "total": 3,
+      "text": "评估量化不能只看困惑度或单句相似度，还要看检索指标。\n推荐做法是固定一份带标注的查询集，分别在 FP32 和 INT8 模型上跑 Recall@K、nDCG@K 和 MRR，报告变化幅度。\n句向量余弦相似度适合做冒烟检查，检索指标才反映真实影响。\n模型体积要按同一口径统计：只统计实际下载的 ONNX 权重文件，不要把分词器、配置文件和运行时 wasm 算进去。\n压缩比等于 FP32 体积除以量化后体积。\n本项目 FP32 为 94.9MB，INT8 为 24.0MB，压缩比 3.95 倍。",
+      "lang": "zh",
+      "chars": 247
+    },
+    {
+      "id": "1pwfdkx#0",
+      "docId": "1pwfdkx",
+      "docName": "08-bge-model.md",
+      "index": 0,
+      "total": 3,
+      "text": "bge-small-zh-v1.5 模型\nbge-small-zh-v1.5 是 BAAI 发布的中文小模型，属于 BGE（BAAI General Embedding）系列。\n它的隐藏层维度是 512，输出 512 维句向量，参数量约 2400 万，FP32 ONNX 体积约 95MB。\n相比 bge-base 和 bge-large，small 版本更适合端侧：推理更快、内存占用更低，检索质量在中文短文本场景仍然够用。\nBGE 系列使用 CLS 池化，也就是取最后一层 [CLS] 位置的隐藏状态作为句向量，而不是对所有 token 做平均池化。\nTransformers.js 的 feature-extraction pipeline 支持 pooling: \"cls\"，同时用 normalize: true 做 L2 归一化。\n归一化之后，余弦相似度可以直接用内积计算，排序也更稳定。",
+      "lang": "zh",
+      "chars": 400
+    },
+    {
+      "id": "1pwfdkx#1",
+      "docId": "1pwfdkx",
+      "docName": "08-bge-model.md",
+      "index": 1,
+      "total": 3,
+      "text": "归一化之后，余弦相似度可以直接用内积计算，排序也更稳定。\nBGE v1.5 建议给查询加指令前缀，中文的推荐前缀是“为这个句子生成表示以用于检索相关文章：”。\n文档侧不加前缀。\n这个前缀会让查询向量靠近“检索意图”的表示空间，对短查询提升明显。\n前缀必须在查询和文档两侧保持一致的使用方式，否则训练和推理分布不匹配。\n分词器是 BERT 的 WordPiece，中文按字切分，英文按子词切分，最大长度 512。\n我们的分块控制在 420 字符左右，加上前缀后仍远小于 512 个 token，因此不需要截断，也不会浪费太多填充。\n选择中文模型而不是 all-MiniLM-L6-v2 的原因是语料以中文为主。\nall-MiniLM 在英文上很强，但对中文的语义区分度有限，容易出现“看起来都差不多”的向量。\nbge-small-zh 在中文语义检索上的召回明显更好，同时模型体积与 MiniLM 接近，适合作为端侧默认模型。",
+      "lang": "zh",
+      "chars": 412
+    },
+    {
+      "id": "1pwfdkx#2",
+      "docId": "1pwfdkx",
+      "docName": "08-bge-model.md",
+      "index": 2,
+      "total": 3,
+      "text": "bge-small-zh 在中文语义检索上的召回明显更好，同时模型体积与 MiniLM 接近，适合作为端侧默认模型。\n模型来源必须写清楚：Hugging Face 上的 Xenova/bge-small-zh-v1.5 是官方权重的 ONNX 转换版，包含 fp32、fp16、int8 等多种精度；\nModelScope 上有同一仓库的镜像。\n本项目从镜像下载 FP32 权重，再用 ONNX Runtime 自行量化，因此量化方法和体积数据都可以复现。",
+      "lang": "zh",
+      "chars": 228
+    },
+    {
+      "id": "0nmjpw3#0",
+      "docId": "0nmjpw3",
+      "docName": "09-webgpu-wasm.md",
+      "index": 0,
+      "total": 3,
+      "text": "WebGPU 与 WASM 降级\nWebGPU 是浏览器的新一代图形与计算接口，能把 ONNX 计算图映射到 GPU 的 compute shader。\n它比 WebGL 更适合通用计算，支持存储缓冲区和工作组，矩阵乘法可以并行到数千个线程。\n检测 WebGPU 要分两步。\n第一步看 navigator.gpu 是否存在，第二步调用 requestAdapter() 获取适配器；\n有些环境暴露了 API 但没有可用适配器，只判断第一步会误判。\n适配器的 info 里可以看到 vendor、architecture 和 description，例如软件渲染器会显示 swiftshader，集成显卡会显示厂商名。\n把这些信息展示在界面上，有助于判断性能数据的来源。\n拿到适配器不等于模型一定能跑。\nONNX Runtime Web 的 WebGPU 执行器需要算子支持；",
+      "lang": "zh",
+      "chars": 387
+    },
+    {
+      "id": "0nmjpw3#1",
+      "docId": "0nmjpw3",
+      "docName": "09-webgpu-wasm.md",
+      "index": 1,
+      "total": 3,
+      "text": "把这些信息展示在界面上，有助于判断性能数据的来源。\n拿到适配器不等于模型一定能跑。\nONNX Runtime Web 的 WebGPU 执行器需要算子支持；\n如果模型里有权重为 INT8 的量化算子，GPU 可能不支持，需要回退到 CPU 或换用 FP16。\n另一个常见问题是 FP16 支持：Transformers.js 在 WebGPU 上加载 fp16 模型前会检查 shader-f16 特性，不支持就直接报错。\n因此“自动选择精度”要按实际特性判断，而不是假设 GPU 一定能跑 fp16。\nWASM 是保底路径。\nONNX Runtime Web 提供 SIMD 和多线程版本，多线程依赖 SharedArrayBuffer，而 SharedArrayBuffer 需要跨源隔离。\n开启跨源隔离后，crossOriginIsolated 为 true，WASM 线程数可以设到 4；\n未开启时只能单线程，吞吐大约减半。",
+      "lang": "zh",
+      "chars": 416
+    },
+    {
+      "id": "0nmjpw3#2",
+      "docId": "0nmjpw3",
+      "docName": "09-webgpu-wasm.md",
+      "index": 2,
+      "total": 3,
+      "text": "开启跨源隔离后，crossOriginIsolated 为 true，WASM 线程数可以设到 4；\n未开启时只能单线程，吞吐大约减半。\n应用应把这两个状态显示出来，方便解释性能差异。\n降级策略应该是链式的：先尝试 WebGPU，失败则切 WASM，而不是直接放弃。\n失败原因要收集起来，在控制台或界面上给出可读的提示。\n用户手动切换后端的能力也很重要：调试、对比性能、以及在某些驱动上 WebGPU 反而不如 WASM 时，可以强制使用 WASM。\n验证降级路径需要构造无 WebGPU 的环境。\n最简单的办法是加一个 URL 参数，例如 ?\nbackend=wasm，初始化时直接跳过 WebGPU；\n再用无头浏览器或禁用 GPU 的浏览器打开，确认模型能加载、检索能完成、界面提示正确。\n只测试成功路径的降级逻辑，等于没有测试。",
+      "lang": "zh",
+      "chars": 367
+    },
+    {
+      "id": "0r7a8om#0",
+      "docId": "0r7a8om",
+      "docName": "10-evaluation.md",
+      "index": 0,
+      "total": 2,
+      "text": "检索质量评估方法\n检索质量评估需要三样东西：固定的语料、带标注的查询集、明确的指标。\n语料固定后，每次实验的候选集合一致；\n查询集里每条查询标注相关文档；\n指标把排序结果换算成一个可比较的数字。\n最常用的指标是 Recall@K。\n它衡量前 K 个结果里覆盖了多少相关文档，适合“不能漏”的场景。\nnDCG@K 考虑排序位置，越相关的文档排得越靠前得分越高，适合“排序质量”评估。\nMRR 只看第一个相关结果的名次，适合问答类单答案场景。\n三者一起看，能避免被单一指标误导。\n做量化对比时，评测集必须完全相同，查询和文档的编码方式也要一致。\n比如查询统一加 BGE 指令前缀，文档不加；\n池化统一用 CLS；\n归一化统一开启。\n任何一处不一致，指标差异都可能来自流程而不是量化。\n评估粒度也要说清楚。\n按文档评估时，先对同一文档的多个分块取最高分，再对文档排序；\n按分块评估时，直接对分块排序。",
+      "lang": "zh",
+      "chars": 397
+    },
+    {
+      "id": "0r7a8om#1",
+      "docId": "0r7a8om",
+      "docName": "10-evaluation.md",
+      "index": 1,
+      "total": 2,
+      "text": "评估粒度也要说清楚。\n按文档评估时，先对同一文档的多个分块取最高分，再对文档排序；\n按分块评估时，直接对分块排序。\n前者更接近用户感知（用户关心哪篇文档相关），后者更适合调分块策略。\n本项目同时记录两种口径，主指标用文档级。\n除了平均值，还要看最差情况。\n量化可能让少数查询的相关文档掉出前 K，平均值看不出这一点。\n报告里应给出指标的最小值、掉点查询列表，以及量化前后的排名变化。\n如果掉点集中在某类查询（例如包含数字或英文缩写的查询），可以针对性调整。\n最后，评估脚本要可复现：语料和查询集入库，脚本一条命令跑完，输出 JSON 原始数据。\n技术说明里的表格应该由这份 JSON 生成，而不是手工填写。\n评审如果能自己跑一遍脚本并得到同样的数字，可信度会高很多。",
+      "lang": "zh",
+      "chars": 333
+    },
+    {
+      "id": "0h0ft2h#0",
+      "docId": "0h0ft2h",
+      "docName": "11-performance.md",
+      "index": 0,
+      "total": 2,
+      "text": "性能优化实践\n端侧知识库的性能可以拆成五段：模型下载与加载、文档向量化、写入与索引刷新、查询向量化、检索排序。\n分阶段计时比只报一个端到端数字更有诊断价值，因为优化手段完全不同。\n模型加载的优化点包括：把模型文件放在本地静态目录，避免公网 CDN；\n开启 HTTP 缓存；\n不要每次查询都重建 pipeline。\n加载完成后做一次预热推理，把 shader 编译和缓冲区分配的成本提前付掉。\n报告时应区分冷加载和预热后的状态。\n文档向量化的优化点是批处理和进度反馈。\n批大小 8 到 16 通常能跑满 CPU 或 GPU；\n批太大反而增加内存压力和首条延迟。\n每批完成后更新进度条，用户不会觉得界面卡死。\n吞吐用“块/秒”和“字符/秒”两个口径报告，因为分块长度会变化。\n写入与索引刷新的优化点是减少往返。\n把分块按 100 条一批 upsert，最后一次 refresh_index。\n如果每写一条就刷新，索引维护成本会主导总耗时。",
+      "lang": "zh",
+      "chars": 417
+    },
+    {
+      "id": "0h0ft2h#1",
+      "docId": "0h0ft2h",
+      "docName": "11-performance.md",
+      "index": 1,
+      "total": 2,
+      "text": "把分块按 100 条一批 upsert，最后一次 refresh_index。\n如果每写一条就刷新，索引维护成本会主导总耗时。\n导入大文件时，可以先写完所有批次再刷新，刷新期间界面提示“索引合并中”。\n查询路径的优化点是减少不必要的计算。\n查询只编码一次，向量复用；\n检索只发一次 hybridSearch，不在客户端做二次排序；\nTopK 控制在合理范围，候选窗口不要无限放大。\n端到端延迟 = 查询向量化 + 网络往返 + 数据库检索 + 前端渲染，四段都要单独记录。\n复测时要固定设备、浏览器版本、语料、查询集、批大小和后端。\n同一份代码在不同机器上差异可能很大，报告里必须写清楚环境。\n每个实验至少重复 3 轮，报告中位数，同时给出 P95，避免只挑最快的一次。\n首次请求和预热后要分开报告。\n最后，优化不能以牺牲检索质量为代价。\n每次性能改动后重跑质量评估；\n如果 Recall@K 明显下降，说明优化改变了语义，需要回滚或补偿。",
+      "lang": "zh",
+      "chars": 420
+    },
+    {
+      "id": "1367w62#0",
+      "docId": "1367w62",
+      "docName": "12-incremental-state.md",
+      "index": 0,
+      "total": 3,
+      "text": "增量导入、集合与会话状态\n知识库应用通常会经历多次导入：先导入一批笔记，过几天再补充论文，最后再导入会议记录。\n增量导入要求新数据能追加、旧数据不重复、检索结果始终对应当前知识库。\n幂等键的设计是关键。\n分块 ID 用“文档内容哈希 + 分块序号”生成：同一篇文档重复导入时 ID 不变，upsert 会覆盖旧记录；\n文档内容修改后哈希变化，旧分块不会自动删除，需要额外的清理策略。\n对演示应用来说，覆盖已经足够；\n生产环境应记录文档版本，并在导入后删除同文档的过期分块。\n集合（collection）是 seekdb 里组织和检索数据的单位。\n每个知识库对应一个集合，集合名带随机后缀避免冲突。\n集合里保存向量、原文和元数据，元数据包括文档名、分块序号、语言和字符数。\n查询时按集合隔离，切换知识库就是切换集合。\n会话状态包括“当前选中的知识库”“最近一次查询”“界面上的计时数据”。",
+      "lang": "zh",
+      "chars": 393
+    },
+    {
+      "id": "1367w62#1",
+      "docId": "1367w62",
+      "docName": "12-incremental-state.md",
+      "index": 1,
+      "total": 3,
+      "text": "查询时按集合隔离，切换知识库就是切换集合。\n会话状态包括“当前选中的知识库”“最近一次查询”“界面上的计时数据”。\n这些状态可以放在 localStorage 和内存里，但要保证刷新页面后能恢复到一个一致的状态：如果记住的知识库已被删除，应自动回退到第一个可用集合，而不是继续向不存在的集合发查询。\n连续操作容易出错的地方是竞态。\n用户在导入过程中切换知识库，导入任务仍在往旧集合写；\n用户在查询过程中删除集合，查询会报错。\n解决办法是让异步任务捕获开始时的集合 ID，完成后只在“仍然是当前集合”时更新界面；\n删除集合时取消或忽略进行中的请求。\n检索结果的一致性还依赖索引刷新。\n导入完成后必须刷新，否则新分块查不到；\n刷新是异步语义，界面要等刷新返回后再提示“可检索”。\n如果导入和查询并发，应该让查询等待刷新完成，或者明确提示“索引合并中，结果可能不完整”。",
+      "lang": "zh",
+      "chars": 382
+    },
+    {
+      "id": "1367w62#2",
+      "docId": "1367w62",
+      "docName": "12-incremental-state.md",
+      "index": 2,
+      "total": 3,
+      "text": "刷新是异步语义，界面要等刷新返回后再提示“可检索”。\n如果导入和查询并发，应该让查询等待刷新完成，或者明确提示“索引合并中，结果可能不完整”。\n最后，把所有状态变化记录到界面：当前集合、分块数、最后刷新时间、最近一次导入耗时。\n用户和评审都能一眼看出数据是不是最新的。",
+      "lang": "zh",
+      "chars": 134
+    },
+    {
+      "id": "03pz52g#0",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 0,
+      "total": 9,
+      "text": "Hybrid search inside seekdb\nseekdb is an AI-native database from OceanBase. It keeps relational data, vector indexes and full-text indexes in one engine, so an application can run semantic and keyword retrieval against the same table without a second datastore.",
+      "lang": "en",
+      "chars": 261
+    },
+    {
+      "id": "03pz52g#1",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 1,
+      "total": 9,
+      "text": "The vector column is declared as VECTOR(n) and indexed with HNSW. HNSW builds a multi-layer proximity graph: queries start at a sparse upper layer, greedily move toward the closest node, then descend layer by layer. Compared with a brute-force scan, it trades a small amount of recall for a large reduction in latency. The main tuning knobs are M (neighbour count), ef_construction (build-time candidate list) and ef_sea",
+      "lang": "en",
+      "chars": 420
+    },
+    {
+      "id": "03pz52g#2",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 2,
+      "total": 9,
+      "text": "are M (neighbour count), ef_construction (build-time candidate list) and ef_sea\nrch (query-time candidate list).\nThe full-text index uses a parser. For Chinese text, the ik parser recognises compound words, while ngram splits text into fixed-length windows. The chosen parser is recorded in the table definition, for example FULLTEXT KEY idx_fts (document) WITH PARSER ik.",
+      "lang": "en",
+      "chars": 372
+    },
+    {
+      "id": "03pz52g#3",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 3,
+      "total": 9,
+      "text": "he table definition, for example FULLTEXT KEY idx_fts (document) WITH PARSER ik.\nDBMS_HYBRID_SEARCH fuses the two retrieval paths. The caller stores a JSON search description in search_parm, then the function generates the SQL that runs the full-text query, the kNN query and the rank fusion. With the JavaScript SDK this is a single call:\ncollection.hybridSearch({",
+      "lang": "en",
+      "chars": 365
+    },
+    {
+      "id": "03pz52g#4",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 4,
+      "total": 9,
+      "text": "collection.hybridSearch({\nquery: { whereDocument: { $contains: \"vector index\" }, nResults: 80 },\nknn: { queryEmbeddings: embedding, nResults: 80 },\nrank: { rrf: { rankWindowSize: 80, rankConstant: 60 } },\nnResults: 10\n});",
+      "lang": "en",
+      "chars": 221
+    },
+    {
+      "id": "03pz52g#5",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 5,
+      "total": 9,
+      "text": "{ rrf: { rankWindowSize: 80, rankConstant: 60 } },\nnResults: 10\n});\nRRF, reciprocal rank fusion, scores each candidate as the sum of 1 / (k + rank) across the two lists. It only uses ranks, so a cosine distance and a BM25 score never need to be normalised onto the same scale. The constant k is usually 60. A larger window gives the fusion more candidates and usually improves recall, at the cost of a little extra work.",
+      "lang": "en",
+      "chars": 420
+    },
+    {
+      "id": "03pz52g#6",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 6,
+      "total": 9,
+      "text": "more candidates and usually improves recall, at the cost of a little extra work.\nKeeping the fusion inside the database matters for consistency. If the client fetched two lists and merged them itself, the two queries could see different snapshots, apply different filters, or paginate inconsistently. Running one database query keeps a single view of the data and lets the engine push filters down.",
+      "lang": "en",
+      "chars": 398
+    },
+    {
+      "id": "03pz52g#7",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 7,
+      "total": 9,
+      "text": "ase query keeps a single view of the data and lets the engine push filters down.\nIndex refresh controls visibility. Newly written rows go into an incremental structure and become searchable after refresh_index(). An import pipeline should write in batches, refresh once at the end, and only then tell the user that the new documents are searchable.",
+      "lang": "en",
+      "chars": 348
+    },
+    {
+      "id": "03pz52g#8",
+      "docId": "03pz52g",
+      "docName": "13-hybrid-search-en.md",
+      "index": 8,
+      "total": 9,
+      "text": "e at the end, and only then tell the user that the new documents are searchable.\nThis knowledge-base demo keeps embeddings on the client: the browser encodes documents with a quantized ONNX model, sends vectors and text to a local Node service, and the service stores them in seekdb. Retrieval is one hybridSearch call, so the ranking shown in the UI is exactly the ranking produced by the database.",
+      "lang": "en",
+      "chars": 399
+    },
+    {
+      "id": "0ad1z2m#0",
+      "docId": "0ad1z2m",
+      "docName": "14-privacy-faq.md",
+      "index": 0,
+      "total": 3,
+      "text": "隐私、离线与常见问题\n文档会上传到云端吗？\n不会。\n浏览器读取文件后，在本地完成分块和向量化，只把文本和向量发给本机运行的 Node 服务，再由服务写入本机 seekdb。\n整个过程没有调用任何云端推理接口。\n如果应用部署在远程服务器，文本会经过局域网或公网传输到数据库，但模型推理仍然发生在浏览器，且部署方应明确告知数据传输范围。\n模型文件从哪里来？\n来自 Hugging Face 上 Xenova/bge-small-zh-v1.5 的 ONNX 转换版，ModelScope 有同一仓库的镜像。\n本项目下载 FP32 权重后自行做 INT8 动态量化，量化后的文件随应用一起分发，运行时不访问模型仓库。\n为什么第一次打开很慢？\n首次需要下载约 24MB 的 INT8 模型、初始化 ONNX Runtime、编译 WebGPU shader 或加载 WASM 模块。\n加载完成后会做一次预热推理，之后的查询只需要几十毫秒。",
+      "lang": "zh",
+      "chars": 415
+    },
+    {
+      "id": "0ad1z2m#1",
+      "docId": "0ad1z2m",
+      "docName": "14-privacy-faq.md",
+      "index": 1,
+      "total": 3,
+      "text": "加载完成后会做一次预热推理，之后的查询只需要几十毫秒。\n模型文件带 HTTP 缓存，第二次打开会快很多。\n没有 WebGPU 怎么办？\n应用会自动降级到 WASM，界面顶部会显示黄色提示和当前后端。\nWASM 路径使用多线程（需要跨源隔离）和 SIMD，单条查询通常在几百毫秒内完成，功能与 WebGPU 完全一致。\n为什么检索结果里有不相关的文档？\n全文检索按词项匹配，中文分词可能把一个词拆成更小的单位，导致部分匹配；\n向量检索则可能因为语义泛化召回相近主题。\n混合检索用 RRF 融合两路，通常能把真正相关的结果排在前面。\n可以切换“向量”或“全文”模式对比两路效果。\n支持图片吗？\n当前版本聚焦文本知识库。\n图片需要多模态模型（如 CLIP）生成向量，索引结构可以复用，但模型体积和推理成本会明显增加，因此没有纳入基础版本。\n数据存在哪里？",
+      "lang": "zh",
+      "chars": 374
+    },
+    {
+      "id": "0ad1z2m#2",
+      "docId": "0ad1z2m",
+      "docName": "14-privacy-faq.md",
+      "index": 2,
+      "total": 3,
+      "text": "当前版本聚焦文本知识库。\n图片需要多模态模型（如 CLIP）生成向量，索引结构可以复用，但模型体积和推理成本会明显增加，因此没有纳入基础版本。\n数据存在哪里？\n存在本机 seekdb 的数据库目录里，集合名形如 kb_xxxxxxxx，包含向量列、原文和 JSON 元数据。\n删除知识库会删除对应集合及其索引。",
+      "lang": "zh",
+      "chars": 155
+    }
+  ]
+}
