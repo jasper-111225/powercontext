@@ -26,7 +26,7 @@ export const config = {
     name: "BAAI/bge-small-zh-v1.5 (ONNX, INT8)",
     dim: 512,
     queryPrefix: "",
-    int8Bytes: 24014955,
+    int8Bytes: 24020718,
     fp32Bytes: 94851877,
   },
   limits: {
