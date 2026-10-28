@@ -29,7 +29,7 @@ Qoder 读取 `README.md`、`docs/技术说明.md` 与现有代码，逐项实现
 | 01 | 18:12 | 需求拆解与数据模型 | 输出 HTTP→检索→作答时序、四张表字段/索引、三个失败点；落 `docs/qoder/01-design.md` | 与 `app/db.py` 的 DDL 对照一致 | `qoder-01.png` · `docs/qoder/01-design.md` |
 | 02 | 18:14–18:37 | 文档解析与分块 | 重构 `app/ingest.py`；标题路径、PDF 页码、代码围栏；补解析测试 | `pytest tests/test_core.py` 通过；6 块/1411 字符 | `qoder-02.png` · `qoder-02-output.png` · `task-02-pytest-chunks.log` |
 | 03 | 18:16–19:02 | seekdb schema 与双路检索 | 实现 `SeekDB`、向量/全文/标题加权/RRF；记录真实 SQL | DDL 与 SQL 落盘；检索命中构建文档 | `qoder-03.png` · `qoder-03-output.png` · `task-03-*.md/out` |
-| 04 | 18:19 | 引用校验与拒答 | 审阅并补齐 `app/llm.py`：合法 `[n]`、越界清洗、抽取式兜底、OOV 拒答 | 相关 8 项测试通过；全量 34 项通过 | `qoder-04.png` |
+| 04 | 18:19 | 引用校验与拒答 | 审阅并补齐 `app/llm.py`：合法 `[n]`、越界清洗、抽取式兜底、OOV 拒答 | 相关 8 项测试通过；全量 36 项通过（任务 04 当时 34 项，后续补 2 项） | `qoder-04.png` |
 | 05 | 18:28 | Web 工作台 | 三栏页面、引用点击高亮、检索轨迹、资料库、评测页；`styles.css` + 模板 | 浏览器实测提问/导入/轨迹正常 | `qoder-05.png` |
 | 06 | 22:30 | PowerContext 记忆 | 写入/读回 profile 与 progress；重启 Server 后复读；离线降级 | `verify.py` 27 项全 PASS；主题恢复 | `qoder-06.png` · `qoder-06-home.png` · `task-06-memory-restart.md` |
 | 07 | 20:37 | 评测与验收脚本 | 生成 23 题评测与 27 项验收；记录 p50/均值与逐题结果 | `eval.py` 与 `verify.py` 可复跑 | `verify.png` · `task-07-eval.out` · `eval.json` |
@@ -42,7 +42,7 @@ Qoder 读取 `README.md`、`docs/技术说明.md` 与现有代码，逐项实现
 
 | 证据 | 位置 |
 |---|---|
-| 单元测试 | `tests/test_core.py`、`test_api.py`、`test_memory.py`；`pytest -q` 34 项 |
+| 单元测试 | `tests/test_core.py`、`test_api.py`、`test_memory.py`；`pytest -q` 36 项 |
 | 端到端验收 | `scripts/verify.py`；`docs/evidence/logs/verify-20261028-223911.md`（27 PASS） |
 | 评测逐题结果 | `docs/evidence/eval.json`、`eval.md`（Recall@5 95% · 引用 95% · 拒答 100% · p50 209 ms） |
 | seekdb 实际 SQL | `app/db.py`；`docs/evidence/logs/task-03-seekdb-sql.md` |
@@ -53,7 +53,7 @@ Qoder 读取 `README.md`、`docs/技术说明.md` 与现有代码，逐项实现
 
 ```bash
 # 1. 代码与测试
-.venv/bin/python -m pytest -q                 # 34 passed
+.venv/bin/python -m pytest -q                 # 36 passed
 JUDIAN_BASE=http://127.0.0.1:8766 .venv/bin/python scripts/verify.py   # 27 PASS
 
 # 2. 站点无痕访问
