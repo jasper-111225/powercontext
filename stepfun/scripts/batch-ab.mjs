@@ -18,10 +18,13 @@ const chunks = JSON.parse(await fs.readFile(path.join(root, "data/eval/chunks.js
 const texts = chunks.slice(0, 24).map((chunk) => chunk.text);
 const rounds = Number(process.env.AB_ROUNDS ?? 2);
 
+const benchHome = process.env.BENCH_HOME ?? path.join(root, ".bench-home");
+await fs.mkdir(benchHome, { recursive: true });
+
 const browser = await chromium.launch({
   executablePath: process.env.BROWSER_PATH ?? "/usr/bin/microsoft-edge",
   headless: true,
-  env: { ...process.env, HOME: process.env.BENCH_HOME ?? "/home/jasper/seekdb/.tmp_stepfun/home" },
+  env: { ...process.env, HOME: benchHome },
   args: ["--no-sandbox", "--disable-dev-shm-usage", "--enable-unsafe-webgpu", "--use-angle=swiftshader",
     "--disable-gpu-sandbox", "--disable-crash-reporter", "--disable-breakpad"],
 });

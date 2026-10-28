@@ -6,6 +6,7 @@
  *
  *   node scripts/seed-demo.mjs [baseUrl]
  */
+import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,11 +15,13 @@ import { chromium } from "playwright-core";
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const base = process.argv[2] ?? "http://127.0.0.1:3000/";
 const name = "示例知识库";
+const benchHome = process.env.BENCH_HOME ?? path.join(root, ".bench-home");
+await fs.mkdir(benchHome, { recursive: true });
 
 const browser = await chromium.launch({
   executablePath: process.env.BROWSER_PATH ?? "/usr/bin/microsoft-edge",
   headless: true,
-  env: { ...process.env, HOME: process.env.BENCH_HOME ?? "/home/jasper/seekdb/.tmp_stepfun/home" },
+  env: { ...process.env, HOME: benchHome },
   args: ["--no-sandbox", "--disable-dev-shm-usage", "--enable-unsafe-webgpu", "--use-angle=swiftshader",
     "--disable-gpu-sandbox", "--disable-crash-reporter", "--disable-breakpad"],
 });

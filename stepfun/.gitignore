@@ -1,5 +1,6 @@
 node_modules/
 .models/
+.bench-home/
 .venv/
 dist/
 web/public/ort/

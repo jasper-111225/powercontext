@@ -25,6 +25,9 @@ const rounds = Number(process.env.BENCH_ROUNDS ?? 3);
 const dtype = process.env.EMBED_DTYPE === "fp32" ? "fp32" : "int8";
 const suffix = dtype === "fp32" ? "-fp32" : "";
 
+const benchHome = process.env.BENCH_HOME ?? path.join(root, ".bench-home");
+await fs.mkdir(benchHome, { recursive: true });
+
 const evidenceDir = path.join(root, "evidence");
 const shotDir = path.join(evidenceDir, "screenshots");
 await fs.mkdir(shotDir, { recursive: true });
@@ -54,7 +57,7 @@ for (const backend of backends) {
   const browser = await chromium.launch({
     executablePath: edge,
     headless: true,
-    env: { ...process.env, HOME: process.env.BENCH_HOME ?? "/home/jasper/seekdb/.tmp_stepfun/home" },
+    env: { ...process.env, HOME: benchHome },
     args: [
       "--no-sandbox",
       "--disable-dev-shm-usage",
