@@ -1,0 +1,598 @@
+{
+  "run_at": "2026-10-28T07:07:27+08:00",
+  "model": "qwen2.5:0.5b",
+  "embed_model": "qwen3-embedding:0.6b",
+  "mode": "full",
+  "metrics": {
+    "recall_at_5": 1.0,
+    "citation_hit": 1.0,
+    "refusal_accuracy": 1.0,
+    "answer_accuracy": 1.0,
+    "avg_latency_ms": 2643,
+    "p50_latency_ms": 176,
+    "total": 23,
+    "answerable": 20,
+    "unanswerable": 3,
+    "corpus_chunks": 138
+  },
+  "cases": [
+    {
+      "id": "q01",
+      "question": "首次编译 seekdb 前需要初始化依赖吗？",
+      "expected": "build-and-run.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.775,
+      "latency_ms": 261,
+      "top5": [
+        "build-and-run.md",
+        "build-and-run.md",
+        "mysqltest.md",
+        "toolchain.md",
+        "coding-convention.md"
+      ],
+      "cited": [
+        "build-and-run.md",
+        "build-and-run.md",
+        "build-and-run.md"
+      ],
+      "answer": "根据《获取代码、编译并运行 seekdb》的原文：\n- init 通常只在首次编译或依赖定义变化后使用。 [1]\n- init 用于准备当前平台所需的依赖，首次编译或依赖定义变化后通常需要执行。 [2]\n- 先按照安装工具链安装支持的编译器和依赖。 [8]"
+    },
+    {
+      "id": "q02",
+      "question": "Release 模式的编译产物在哪个目录？",
+      "expected": "build-and-run.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.623,
+      "latency_ms": 519,
+      "top5": [
+        "build-and-run.md",
+        "build-and-run.md",
+        "debug.md",
+        "unittest.md",
+        "toolchain.md"
+      ],
+      "cited": [
+        "build-and-run.md",
+        "build-and-run.md",
+        "unittest.md"
+      ],
+      "answer": "根据资料原文：\n- 编译产物位于： build_release/src/observer/seekdb [1]\n- 与 Release 模式相同，增加 --make 可以在配置后直接编译： ./build.sh sanity --init --make -j32 [2]\n- 使用以下命令列出可用的模块目标： make -C build_release help | grep '_tests' [6]"
+    },
+    {
+      "id": "q03",
+      "question": "build.sh 支持 Debug 模式吗？",
+      "expected": "build-and-run.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.736,
+      "latency_ms": 253,
+      "top5": [
+        "debug.md",
+        "build-and-run.md",
+        "debug.md",
+        "build-and-run.md",
+        "unittest.md"
+      ],
+      "cited": [
+        "debug.md",
+        "build-and-run.md",
+        "debug.md"
+      ],
+      "answer": "根据资料原文：\n- build.sh 不支持 Debug 模式。 [2]\n- 如果配置的软件源提供匹配的 debuginfo 包，可以直接安装； [3]\n- 受支持的 Release 构建使用 RelWithDebInfo，在启用生产优化的同时保留调试信息。 [1]"
+    },
+    {
+      "id": "q04",
+      "question": "增量编译使用什么命令？",
+      "expected": "build-and-run.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.578,
+      "latency_ms": 3485,
+      "top5": [
+        "build-and-run.md",
+        "build-and-run.md",
+        "build-and-run.md",
+        "unittest.md",
+        "unittest.md"
+      ],
+      "cited": [
+        "build-and-run.md",
+        "build-and-run.md",
+        "build-and-run.md"
+      ],
+      "answer": "根据《获取代码、编译并运行 seekdb》的原文：\n- 完成初始化后，可以使用以下命令进行增量编译： ./build.sh release --make [1]\n- 后续增量编译可以使用： ./build.sh sanity --make -j32 [2]\n- 先按照安装工具链安装支持的编译器和依赖。 [3]"
+    },
+    {
+      "id": "q05",
+      "question": "怎么启动一个本地 seekdb 实例？",
+      "expected": "build-and-run.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.653,
+      "latency_ms": 48415,
+      "top5": [
+        "build-and-run.md",
+        "logging.md",
+        "logging.md",
+        "container.md",
+        "mysqltest.md"
+      ],
+      "cited": [
+        "build-and-run.md",
+        "build-and-run.md"
+      ],
+      "answer": "根据《获取代码、编译并运行 seekdb》的原文：\n- 使用仓库中的 obd.sh 包装脚本准备隔离环境并启动 seekdb： ./tools/deploy/obd.sh prepare -p /tmp/obtest ./tools/deploy/obd.sh deploy -c ./tools/deploy/single.yaml [1]\n- 如果生成的端口是 10000，可以使用以下任一客户端连接： mysql -h127.0.0.1 -P10000 -uroot ./deps/3rd/u01/obclient/bin/obclient -h127."
+    },
+    {
+      "id": "q06",
+      "question": "怎么停止并清理本地实例？",
+      "expected": "build-and-run.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.637,
+      "latency_ms": 4579,
+      "top5": [
+        "build-and-run.md",
+        "container.md",
+        "build-and-run.md",
+        "coding-convention.md",
+        "debug.md"
+      ],
+      "cited": [
+        "build-and-run.md",
+        "build-and-run.md"
+      ],
+      "answer": "根据《获取代码、编译并运行 seekdb》的原文：\n- 该命令会停止实例并删除此示例创建的部署数据。 [1]\n- 不要对需要保留的数据执行该命令。 [1]\n- 使用仓库中的 obd.sh 包装脚本准备隔离环境并启动 seekdb： ./tools/deploy/obd.sh prepare -p /tmp/obtest ./tools/deploy/obd.sh deploy -c ./tools/deploy/single.yaml [3]"
+    },
+    {
+      "id": "q07",
+      "question": "Debian 系统上要安装哪些工具链依赖？",
+      "expected": "toolchain.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.628,
+      "latency_ms": 144,
+      "top5": [
+        "toolchain.md",
+        "toolchain.md",
+        "toolchain.md",
+        "build-and-run.md",
+        "toolchain.md"
+      ],
+      "cited": [
+        "toolchain.md",
+        "toolchain.md",
+        "toolchain.md"
+      ],
+      "answer": "根据《安装工具链》的原文：\n- Ubuntu 24.04 和 Debian 13 使用 time64 版本的 libaio： sudo apt-get install libaio1t64 [1]\n- 会自动读取 rust/rust-toolchain.toml，并安装固定版本的工具链、组件和目标。 [3]\n- 先安装 Rust 和少量宿主机工具，再由 ./build.sh release --init 将固定版本的 C/C++ 构建依赖准备到 deps/3rd。 [5]"
+    },
+    {
+      "id": "q08",
+      "question": "怎么用 GDB 调试 seekdb？",
+      "expected": "debug.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.715,
+      "latency_ms": 176,
+      "top5": [
+        "debug.md",
+        "debug.md",
+        "debug.md",
+        "mysqltest.md",
+        "logging.md"
+      ],
+      "cited": [
+        "debug.md",
+        "debug.md"
+      ],
+      "answer": "根据《调试 seekdb》的原文：\n- 分析 core dump 时，必须使用生成该文件的同一二进制： gdb /path/to/seekdb /path/to/core [1]\n- 随后可以使用常规调试器命令设置断点、查看变量和获取 backtrace。 [1]\n- 软件包将运行时二进制安装到 /usr/bin/seekdb。 [2]"
+    },
+    {
+      "id": "q09",
+      "question": "可调试二进制怎么构建？",
+      "expected": "debug.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.656,
+      "latency_ms": 134,
+      "top5": [
+        "debug.md",
+        "build-and-run.md",
+        "debug.md",
+        "debug.md",
+        "debug.md"
+      ],
+      "cited": [
+        "debug.md",
+        "debug.md"
+      ],
+      "answer": "根据《调试 seekdb》的原文：\n- 分析 core dump 或提交调试信息时，应同时记录 seekdb -V，以便匹配二进制的 revision 和构建参数。 [1]\n- 二进制文件位于 build_release/src/observer/seekdb。 [1]\n- 必须使用包含匹配调试信息的二进制，否则输出可能只有 ? [4]"
+    },
+    {
+      "id": "q10",
+      "question": "日志级别怎么配置？",
+      "expected": "logging.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.723,
+      "latency_ms": 198,
+      "top5": [
+        "logging.md",
+        "logging.md",
+        "debug.md",
+        "logging.md",
+        "logging.md"
+      ],
+      "cited": [
+        "logging.md",
+        "logging.md",
+        "logging.md"
+      ],
+      "answer": "根据《系统日志介绍》的原文：\n- 这里仅介绍了最常用的日志级别，更详细的信息参考 ob_parameter_seed.ipp 中关于 syslog_level 的配置，以及ob_log_module.h 文件中 LOG_ERROR 等宏定义。 [1]\n- 有三种方式调整日志级别： - seekdb 程序在启动时会读取配置文件或通过命令行参数输入系统日志级别配置，配置项名称是syslog_level。 [2]\n- **设置模块的日志级别** seekdb 除了可以设置全局和当前线程的日志级别，还可以调整某个模块的日志级别。当前可以通过 SQL HINT 的"
+    },
+    {
+      "id": "q11",
+      "question": "系统日志默认写到哪里？",
+      "expected": "logging.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.671,
+      "latency_ms": 150,
+      "top5": [
+        "logging.md",
+        "logging.md",
+        "logging.md",
+        "logging.md",
+        "logging.md"
+      ],
+      "cited": [
+        "logging.md",
+        "logging.md",
+        "logging.md"
+      ],
+      "answer": "根据《系统日志介绍》的原文：\n- 这里仅介绍了最常用的日志级别，更详细的信息参考 ob_parameter_seed.ipp 中关于 syslog_level 的配置，以及ob_log_module.h 文件中 LOG_ERROR 等宏定义。 [8]\n- 限速日志示例： [2023-12-26 09:46:04.621435] INFO  [SHARE.LOCATION] fetch_vtable_location_ (ob_vtable_location_service.cpp:281) [35675][VTblLocAsyncUp0][T0][YB4"
+    },
+    {
+      "id": "q12",
+      "question": "单元测试的构建怎么配置？",
+      "expected": "unittest.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.575,
+      "latency_ms": 180,
+      "top5": [
+        "unittest.md",
+        "unittest.md",
+        "unittest.md",
+        "unittest.md",
+        "build-and-run.md"
+      ],
+      "cited": [
+        "unittest.md",
+        "unittest.md",
+        "unittest.md"
+      ],
+      "answer": "根据《编写与运行单元测试》的原文：\n- 编译模块测试前，先初始化依赖并配置 Release 构建： ./build.sh release --init [1]\n- seekdb 使用 Google Test 编写 C++ 单元测试。 [2]\n- Pull Request 的 CI 也会运行单元测试和 mysqltest。 [3]"
+    },
+    {
+      "id": "q13",
+      "question": "怎么编译并运行全部模块的测试？",
+      "expected": "unittest.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.687,
+      "latency_ms": 923,
+      "top5": [
+        "unittest.md",
+        "unittest.md",
+        "unittest.md",
+        "mysqltest.md",
+        "build-and-run.md"
+      ],
+      "cited": [
+        "unittest.md",
+        "unittest.md"
+      ],
+      "answer": "根据《编写与运行单元测试》的原文：\n- 编译完成后，再单独运行已注册的 CTest 分片： make -C build_release pretest ./build_release/unittest/run_tests.sh --output-on-failure [1]\n- Pull Request 的 CI 也会运行单元测试和 mysqltest。 [1]\n- 使用正则表达式运行一个模块的全部分片，例如： ./build_release/unittest/run_tests.sh \\ -R '^observer_tests_shard_[0-9]+"
+    },
+    {
+      "id": "q14",
+      "question": "mysqltest 怎么运行？",
+      "expected": "mysqltest.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.747,
+      "latency_ms": 121,
+      "top5": [
+        "mysqltest.md",
+        "mysqltest.md",
+        "mysqltest.md",
+        "mysqltest.md",
+        "mysqltest.md"
+      ],
+      "cited": [
+        "mysqltest.md",
+        "mysqltest.md"
+      ],
+      "answer": "根据《使用 obd.sh 运行 mysqltest》的原文：\n- 要使用 obd.sh 运行 mysqltest 测试，需要通过 obd.sh 部署 OceanBase seekdb 数据库。 [1]\n- 本文从编译源代码开始，使用示例介绍如何使用 obd.sh 部署 seekdb 数据库并运行 mysqltest 测试。 [1]\n- 本文使用该脚本部署 seekdb，并调用 obd test mysqltest 运行测试。 [5]"
+    },
+    {
+      "id": "q15",
+      "question": "ob_malloc 和 OB_NEWx 有什么区别？",
+      "expected": "memory.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.853,
+      "latency_ms": 138,
+      "top5": [
+        "memory.md",
+        "memory.md",
+        "container.md",
+        "memory.md",
+        "container.md"
+      ],
+      "cited": [
+        "memory.md",
+        "memory.md"
+      ],
+      "answer": "根据《内存管理与内存预算》的原文：\n- ob_realloc与libc的realloc不同，它不是在原有地址上扩容，而是先通过ob_malloc+memcpy将数据复制到另一块内存上，再调用ob_free释放原有内存。 [2]\n- 这不仅方便了多租户的资源管理，而且对诊断内存问题有很大帮助。 [2]\n- 与 ob_malloc 类似，OB_NEW提供了一套\"C++\"的接口，在分配释放内存的同时会调用对象的构造析构函数。 [1]"
+    },
+    {
+      "id": "q16",
+      "question": "ObArenaAllocator 适合什么场景？",
+      "expected": "memory.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.766,
+      "latency_ms": 103,
+      "top5": [
+        "memory.md",
+        "memory.md",
+        "memory.md",
+        "coding-convention.md",
+        "memory.md"
+      ],
+      "cited": [
+        "memory.md",
+        "memory.md",
+        "memory.md"
+      ],
+      "answer": "根据《内存管理与内存预算》的原文：\n- ObArenaAllocator 适用于很多小内存申请，短时间内存会释放的场景。 [1]\n- seekdb 针对不同场景，提供了不同的内存分配器。 [2]\n- 对于那些不易优化的大型局部变量（>8K），该接口即保证了常规场景的性能，又能将栈容量安全地降下来。 [3]"
+    },
+    {
+      "id": "q17",
+      "question": "类名和成员变量怎么命名？",
+      "expected": "coding-convention.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.639,
+      "latency_ms": 214,
+      "top5": [
+        "coding-convention.md",
+        "logging.md",
+        "logging.md",
+        "coding-convention.md",
+        "logging.md"
+      ],
+      "cited": [
+        "coding-convention.md",
+        "coding-convention.md",
+        "coding-convention.md"
+      ],
+      "answer": "根据《C++ 命名与函数约定》的原文：\n- 成员变量都以_作为后缀。 [1]\n- seekdb绝大多数的类都有 init 函数，通常在构造函数之后执行，并且拥有int错误码作为返回值。 [6]\n- 类似OB_SUCC，只是判断某个语句是否执行失败： ret = OB_SUCCESS; if (OB_FAIL(func())) { // do something } [8]"
+    },
+    {
+      "id": "q18",
+      "question": "为什么禁止使用 STL 容器？",
+      "expected": "coding-convention.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.678,
+      "latency_ms": 97,
+      "top5": [
+        "coding-convention.md",
+        "container.md",
+        "container.md",
+        "container.md",
+        "container.md"
+      ],
+      "cited": [
+        "coding-convention.md",
+        "container.md",
+        "container.md"
+      ],
+      "answer": "根据资料原文：\n- 由于seekdb支持多租户资源隔离，为了方便控制内存，seekdb禁止使用STL、boost等容器。 [1]\n- C++ STL提供了很多很方便的容器，比如vector、map、unordered_map等，由于OceanBase seekdb 编程风格与内存控制等原因，在seekdb中禁止使用STL的容器。 [2]\n- 由于ObDList的这个特性，会导致它与使用STL list的方法不同。 [6]"
+    },
+    {
+      "id": "q19",
+      "question": "ObIArray 和 ObArray 有什么区别？",
+      "expected": "container.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.85,
+      "latency_ms": 105,
+      "top5": [
+        "container.md",
+        "container.md",
+        "container.md",
+        "container.md",
+        "container.md"
+      ],
+      "cited": [
+        "container.md",
+        "container.md",
+        "container.md"
+      ],
+      "answer": "根据《seekdb C++ 容器库》的原文：\n- 由于seekdb要求所有的动作都要判断返回值，因此ObArray的 operator= 等不带返回值的函数，不建议使用。 [1]\n- 由于ObRbTree 在seekdb中并没有使用，因此不再介绍，有兴趣的请阅读源码 ob_rbtree.h。 [7]\n- 而 ObDList 由用户直接传入包含前后节点指针的对象。 [8]"
+    },
+    {
+      "id": "q20",
+      "question": "运行时内存预算怎么设置？",
+      "expected": "memory.md",
+      "answerable": true,
+      "recall_hit": true,
+      "citation_hit": true,
+      "refused": false,
+      "correct": true,
+      "mode": "extractive",
+      "confidence": 0.703,
+      "latency_ms": 156,
+      "top5": [
+        "memory.md",
+        "memory.md",
+        "memory.md",
+        "memory.md",
+        "memory.md"
+      ],
+      "cited": [
+        "memory.md",
+        "memory.md"
+      ],
+      "answer": "根据《内存管理与内存预算》的原文：\n- 内存申请独立按当前 vector_memory_limit 检查，配置 reload 后直接使用新额度。 [1]\n- 配置值仍会被接受和持久化，但当前内存计算与控制会忽略它。 [1]\n- seekdb 使用 ObMemAttr 来标记一段内存。 [4]"
+    },
+    {
+      "id": "u01",
+      "question": "seekdb 支持 MongoDB 协议吗？",
+      "expected": "",
+      "answerable": false,
+      "recall_hit": false,
+      "citation_hit": false,
+      "refused": true,
+      "correct": true,
+      "mode": "insufficient",
+      "confidence": 0.763,
+      "latency_ms": 204,
+      "top5": [
+        "coding-convention.md",
+        "container.md",
+        "mysqltest.md",
+        "memory.md",
+        "logging.md"
+      ],
+      "cited": [],
+      "answer": "资料中没有找到足够依据来回答这个问题。换一种问法，或把这个主题的资料导入资料库后再试。"
+    },
+    {
+      "id": "u02",
+      "question": "怎么开启 GPU 加速？",
+      "expected": "",
+      "answerable": false,
+      "recall_hit": false,
+      "citation_hit": false,
+      "refused": true,
+      "correct": true,
+      "mode": "insufficient",
+      "confidence": 0.408,
+      "latency_ms": 84,
+      "top5": [
+        "debug.md",
+        "build-and-run.md",
+        "toolchain.md",
+        "logging.md",
+        "toolchain.md"
+      ],
+      "cited": [],
+      "answer": "资料中没有找到足够依据来回答这个问题。换一种问法，或把这个主题的资料导入资料库后再试。"
+    },
+    {
+      "id": "u03",
+      "question": "Kubernetes Operator 怎么部署 seekdb？",
+      "expected": "",
+      "answerable": false,
+      "recall_hit": false,
+      "citation_hit": false,
+      "refused": true,
+      "correct": true,
+      "mode": "insufficient",
+      "confidence": 0.676,
+      "latency_ms": 144,
+      "top5": [
+        "mysqltest.md",
+        "mysqltest.md",
+        "coding-convention.md",
+        "coding-convention.md",
+        "build-and-run.md"
+      ],
+      "cited": [],
+      "answer": "资料中没有找到足够依据来回答这个问题。换一种问法，或把这个主题的资料导入资料库后再试。"
+    }
+  ]
+}

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>据典 · 每一句答案，都能回到原文</title>
+<link rel="stylesheet" href="/static/style.css?v=20261028b" />
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="topbar">
+  <div class="brand" onclick="switchView('ask')">
+    <span class="seal">据</span>
+    <div class="brand-text">
+      <h1>据典</h1>
+      <p>JUDIAN · 每一句答案，都能回到原文</p>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="主导航">
+    <button class="tab active" data-view="ask">问答</button>
+    <button class="tab" data-view="library">资料库</button>
+    <button class="tab" data-view="eval">评测</button>
+  </nav>
+
+  <div class="top-actions">
+    <span class="conn" id="conn-db" title="seekdb 连接"><i></i>seekdb</span>
+    <span class="conn" id="conn-memory" title="PowerContext 记忆"><i></i>记忆</span>
+    <button class="ghost small" id="open-memory">我的学习记忆</button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="sidebar">
+    <div class="side-block">
+      <div class="side-title">资料库 <span id="doc-count" class="count">0</span></div>
+      <div id="doc-list" class="doc-list"></div>
+      <button class="dashed" id="open-import">＋ 导入资料</button>
+      <p class="hint">支持 Markdown / TXT / HTML / PDF。<br />导入后自动分块、向量化。</p>
+    </div>
+
+    <div class="side-block memory-mini">
+      <div class="side-title">我记得</div>
+      <div id="memory-mini-body" class="memory-mini-body">正在读取记忆…</div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-title">最近问过</div>
+      <div id="history-list" class="history-list"></div>
+    </div>
+  </aside>
+
+  <section class="workspace">
+    <!-- 问答 -->
+    <div id="view-ask" class="view">
+      <div class="banner" id="memory-banner" hidden></div>
+
+      <div class="hero" id="hero">
+        <p class="kicker">EVIDENCE-FIRST STUDY ASSISTANT</p>
+        <h2>把资料变成<br /><em>有出处</em>的答案。</h2>
+        <p class="lede">导入论文、文档或笔记。据典用 seekdb 的向量与全文双路检索找证据，
+          再让本地模型只依据证据作答；每一句都带编号，点开就是原文。</p>
+        <div class="hero-meta">
+          <span><b id="hero-docs">0</b> 篇资料</span>
+          <span><b id="hero-chunks">0</b> 个片段</span>
+          <span>向量 + 全文 <b>RRF</b> 融合</span>
+          <span>记忆由 <b>PowerContext</b> 保管</span>
+        </div>
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+
+      <div id="thread" class="thread" aria-live="polite"></div>
+
+      <form class="composer" id="composer">
+        <textarea id="question" rows="1" placeholder="问点什么，例如：Release 模式的编译产物在哪？（Enter 发送，Shift+Enter 换行）"></textarea>
+        <div class="composer-side">
+          <label class="style-toggle" title="回答详略">
+            <input type="checkbox" id="style-detailed" /> 详细
+          </label>
+          <button type="submit" class="primary" id="send">提问 <span class="arrow">↗</span></button>
+        </div>
+      </form>
+      <div class="composer-foot">
+        <span>只依据你的资料回答 · 找不到就说找不到</span>
+        <span id="ready-hint"></span>
+      </div>
+    </div>
+
+    <!-- 资料库 -->
+    <div id="view-library" class="view" hidden>
+      <div class="page-head">
+        <div>
+          <p class="kicker">LIBRARY</p>
+          <h2>资料库</h2>
+          <p class="lede small">每篇资料被切成可引用的片段，同时写入向量索引与 IK 全文索引。</p>
+        </div>
+        <button class="primary" id="open-import-2">导入资料</button>
+      </div>
+      <div class="stat-row" id="library-stats"></div>
+      <div class="table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>标题</th><th>类型</th><th>片段</th><th>字符</th><th>来源</th><th></th></tr></thead>
+          <tbody id="doc-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 评测 -->
+    <div id="view-eval" class="view" hidden>
+      <div class="page-head">
+        <div>
+          <p class="kicker">EVALUATION</p>
+          <h2>检索与引用评测</h2>
+          <p class="lede small">固定题目、固定语料，跑一遍就知道「找得到」和「引得对」是不是真的。</p>
+        </div>
+        <button class="ghost" id="refresh-eval">刷新</button>
+      </div>
+      <div id="eval-body">
+        <div class="empty">正在读取评测结果…</div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="evidence-panel" id="evidence-panel">
+    <div class="panel-head">
+      <div>
+        <p class="kicker">EVIDENCE</p>
+        <h3>证据</h3>
+      </div>
+      <span class="count" id="evidence-count">0</span>
+    </div>
+    <div id="evidence-list" class="evidence-list">
+      <div class="empty small">提问后，这里会列出这次回答用到的原文片段，<br />以及它在两路检索里的排名。</div>
+    </div>
+    <details class="trace" id="trace-box">
+      <summary>检索轨迹 <span>向量 / 全文 / RRF</span></summary>
+      <div id="trace-body" class="trace-body"></div>
+    </details>
+  </aside>
+</main>
+
+<!-- 导入 -->
+<dialog id="import-dialog" class="dialog">
+  <form method="dialog" class="dialog-inner">
+    <div class="dialog-head">
+      <h3>导入资料</h3>
+      <button class="icon" value="cancel" aria-label="关闭">×</button>
+    </div>
+    <label class="dropzone" id="dropzone">
+      <input type="file" id="file-input" accept=".md,.markdown,.txt,.pdf,.html,.htm" hidden />
+      <span class="drop-icon">↥</span>
+      <b>选择文件</b> 或拖到这里
+      <small>Markdown / TXT / HTML / PDF，最大 20MB</small>
+    </label>
+    <div id="import-status" class="import-status"></div>
+  </form>
+</dialog>
+
+<!-- 记忆 -->
+<dialog id="memory-dialog" class="dialog wide">
+  <form method="dialog" class="dialog-inner">
+    <div class="dialog-head">
+      <div>
+        <p class="kicker">MEMORY · POWERCONTEXT</p>
+        <h3>我的学习记忆</h3>
+      </div>
+      <button class="icon" value="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="memory-grid">
+      <div>
+        <div class="field">
+          <label for="m-topic">我在研究</label>
+          <input id="m-topic" placeholder="例如：seekdb 的向量索引与查询优化" />
+        </div>
+        <div class="field">
+          <label for="m-goal">这周想完成</label>
+          <input id="m-goal" placeholder="例如：跑通一次本地编译并读完 debug 文档" />
+        </div>
+        <div class="field">
+          <label>回答偏好</label>
+          <div class="segmented">
+            <label><input type="radio" name="m-style" value="concise" checked /> 简洁</label>
+            <label><input type="radio" name="m-style" value="detailed" /> 详细</label>
+          </div>
+        </div>
+        <button class="primary" id="save-memory" type="button">写入记忆</button>
+        <p class="hint" id="memory-source"></p>
+      </div>
+      <div class="memory-state">
+        <div class="memory-fact"><span>累计提问</span><b id="m-asked">0</b></div>
+        <div class="memory-fact"><span>记忆条目</span><b id="m-entries">0</b></div>
+        <div class="memory-fact"><span>存储</span><b id="m-source">—</b></div>
+        <div class="memory-last">
+          <span>上次问</span>
+          <p id="m-last">还没有记录</p>
+        </div>
+        <div class="memory-weak">
+          <span>待补的主题</span>
+          <ul id="m-weak"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="memory-entries" id="m-entries-list"></div>
+  </form>
+</dialog>
+
+<!-- 证据全文 -->
+<dialog id="chunk-dialog" class="dialog wide">
+  <div class="dialog-inner">
+    <div class="dialog-head">
+      <div>
+        <p class="kicker" id="chunk-kicker">SOURCE</p>
+        <h3 id="chunk-title">原文</h3>
+      </div>
+      <button class="icon" onclick="document.getElementById('chunk-dialog').close()" aria-label="关闭">×</button>
+    </div>
+    <div id="chunk-meta" class="chunk-meta"></div>
+    <pre id="chunk-text" class="chunk-text"></pre>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+<script src="/static/app.js?v=20261028b"></script>
+</body>
+</html>
