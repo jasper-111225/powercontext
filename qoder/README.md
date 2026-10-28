@@ -151,6 +151,7 @@ cd qoder
 
 `setup.sh` 会先检查 seekdb 与向量模型，再灌库；重复执行会命中向量缓存，很快。
 换语料：把文件放进 `data/corpus/`（可在 `manifest.json` 里给中文标题），然后 `python scripts/seed.py --reset`。
+Windows 下用 Git Bash 执行上述命令；脚本会自动选择 `.venv/Scripts/python.exe`。
 
 ### 6.3 最小验证
 
@@ -179,10 +180,10 @@ curl -s -X POST http://127.0.0.1:8766/api/ask \
 
 | 指标 | 数值 |
 |---|---:|
-| Recall@5 | **100%**（20/20） |
-| 引用命中率 | **100%**（20/20） |
+| Recall@5 | **95%**（19/20） |
+| 引用命中率 | **95%**（19/20） |
 | 拒答准确率 | **100%**（3/3） |
-| 中位耗时 | **176 ms**（p50；均值 2.6 s，含一次模型重载） |
+| 中位耗时 | **209 ms**（p50；均值 372 ms，`--no-llm`） |
 
 评测页在 Web 界面「评测」标签中直接展示；`docs/evidence/eval.json` 是原始逐题结果。
 
@@ -207,18 +208,22 @@ qoder/
 │   ├── seed.py        # 灌库
 │   ├── run.sh         # 启 Web
 │   ├── pc_server.sh   # 启停 PowerContext
-│   └── eval.py        # 评测
+│   ├── eval.py        # 评测
+│   └── verify.py      # 静态 + 端到端验收
 ├── data/
 │   ├── corpus/        # 示例语料（seekdb 开发者文档，Apache-2.0）
+│   ├── samples/       # 导入演示用的实验笔记
 │   └── gold.json      # 23 题评测集
 ├── docs/
 │   ├── 运行说明.md
 │   ├── 验证样例.md
 │   ├── 技术说明.md
+│   ├── Qoder任务卡.md
 │   ├── Qoder开发记录.md
+│   ├── 提交材料.md
 │   └── evidence/      # 日志、截图、eval.json
 ├── site/              # Qoder Sites 发布用静态站点
-├── tests/             # 单元测试（分块 / RRF / 引用解析）
+├── tests/             # 单元 / API / 记忆测试
 ├── pyproject.toml
 └── .env.example
 ```
@@ -238,6 +243,6 @@ qoder/
 ## 11. 来源与许可
 
 - 示例语料来自 [oceanbase/seekdb](https://github.com/oceanbase/seekdb) 的 `docs/developer-guide/zh`（Apache-2.0），
-  仅做格式转换与分块，未改内容；见 `data/corpus/SOURCES.md`。
+  仅做格式转换与分块，未改内容；见 `data/corpus/seekdb-dev/SOURCES.md`。
 - 代码以 Apache-2.0 发布；第三方依赖见 `pyproject.toml`。
 - 本项目为 2026 OceanBase 数据库大赛生态赛道（Qoder）作品。

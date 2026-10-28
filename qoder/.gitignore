@@ -1,8 +1,9 @@
 .venv/
-.runtime/
 __pycache__/
 *.pyc
-data/uploads/
+.pytest_cache/
 .env
-
-*.egg-info/
+.runtime/
+data/uploads/
+data/eval/last_report.json
+*.log

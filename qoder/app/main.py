@@ -1,350 +1,434 @@
-"""据典 · FastAPI 应用。"""
-
 from __future__ import annotations
 
-import re
+import json
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import db
-from .config import DATA_DIR, STATIC_DIR, settings
-from .embed import Embedder
-from .pipeline import IngestError, ingest_path as run_ingest
-from .llm import Answerer, _terms
-from .memory import Memory, PROGRESS_KIND, PROFILE_KIND
+from .config import Settings, get_settings
+from .db import DBUnavailable, SeekDB
+from .embed import Embedder, EmbeddingError
+from .ingest import parse_corpus
+from .llm import Answer, LLMClient, answer_question
+from .memory import Memory
+from .pipeline import Pipeline
 
-app = FastAPI(title="据典 Judian", version="0.1.0")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-embedder = Embedder()
-answerer = Answerer()
-memory = Memory()
-
-UPLOAD_DIR = DATA_DIR / "uploads"
-ALLOWED = {".md", ".markdown", ".txt", ".pdf", ".html", ".htm"}
-MAX_UPLOAD = 20 * 1024 * 1024
-
-SUGGESTIONS = [
-    "seekdb 首次编译前需要准备什么？",
-    "编译产物在哪个目录？支持 Debug 模式吗？",
-    "ObIArray 和 ObArray 有什么区别？",
-    "单元测试和 mysqltest 分别怎么跑？",
-    "ObArenaAllocator 适合什么场景？",
-    "C++ 类名和成员变量怎么命名？",
+FALLBACK_SUGGESTIONS = [
+    "Release 模式的编译产物在哪个目录？",
+    "怎么用 GDB 调试 seekdb？",
+    "memory_budget 设置为 0M 时如何计算？",
+    "为什么 seekdb 禁止使用 STL 容器？",
 ]
 
 
-def _conn():
-    return db.connect()
-
-
-@app.on_event("startup")
-def startup() -> None:
-    settings.ensure_runtime()
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    db.init_db()
-
-
-@app.get("/", include_in_schema=False)
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
-
-
-@app.get("/api/health")
-def health() -> dict[str, Any]:
-    checks: dict[str, Any] = {"app": "ok", "db": "down", "embed": "unknown", "llm": "unknown"}
-    try:
-        conn = _conn()
-        try:
-            stats = db.corpus_stats(conn)
-            checks["db"] = "ok"
-            checks["corpus"] = stats
-        finally:
-            conn.close()
-    except Exception as exc:  # noqa: BLE001
-        checks["db"] = f"{type(exc).__name__}: {exc}"
-    checks["embed"] = f"{settings.embed_model} @ {settings.embed_base}（缓存 {embedder.cached} 条）"
-    checks["llm"] = f"{settings.llm_model} @ {settings.llm_base}"
-    checks["memory"] = "ok" if memory.health() else f"offline: {memory.last_error}"
-    return checks
-
-
-class AskBody(BaseModel):
-    question: str = Field(min_length=2, max_length=500)
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
     doc_id: int | None = None
-    style: str | None = None
+    style: Literal["concise", "detailed"] = "concise"
 
 
-@app.post("/api/ask")
-def ask(body: AskBody) -> dict[str, Any]:
-    question = body.question.strip()
-    if not question:
-        raise HTTPException(400, "问题不能为空")
-    started = time.time()
-    conn = _conn()
-    try:
-        if db.corpus_stats(conn)["chunks"] == 0:
-            raise HTTPException(409, "资料库还是空的，请先导入资料或运行 scripts/seed.py")
-
-        profile = (memory.snapshot().get("profile") or {}) if memory.health() else {}
-        style = body.style or profile.get("style") or "concise"
-
-        t_embed = time.time()
-        vector = embedder.embed_one(question)
-        embed_ms = int((time.time() - t_embed) * 1000)
-
-        t_search = time.time()
-        result = db.hybrid_search(conn, question, vector, doc_id=body.doc_id)
-        corpus_text = db.corpus_text(conn)
-        search_ms = int((time.time() - t_search) * 1000)
-        evidence = result["fused"]
-
-        terms = sorted(_terms(question))
-        coverage = 0.0
-        if terms and evidence:
-            top_text = " ".join(item["text"] for item in evidence[:3]).lower()
-            coverage = sum(1 for term in terms if term in top_text) / len(terms)
-        top_sim = max((item.get("vec_sim") or 0) for item in evidence) if evidence else 0.0
-        confidence = round(min(1.0, max(0.0, top_sim * 0.75 + coverage * 0.45)), 3)
-
-        t_answer = time.time()
-        answer = answerer.answer(question, evidence, style=style, corpus_text=corpus_text)
-        answer_ms = int((time.time() - t_answer) * 1000)
-
-        total_ms = int((time.time() - started) * 1000)
-        used = set(answer.citations)
-        public_evidence = []
-        for index, item in enumerate(evidence, start=1):
-            public_evidence.append(
-                {
-                    "index": index,
-                    "chunk_id": int(item["id"]),
-                    "doc_id": int(item["doc_id"]),
-                    "doc_title": item.get("doc_title", ""),
-                    "source": item.get("source", ""),
-                    "heading": item.get("heading", ""),
-                    "page": item.get("page"),
-                    "text": item["text"],
-                    "snippet": item["text"][:420] + ("……" if len(item["text"]) > 420 else ""),
-                    "vec_rank": item.get("vec_rank"),
-                    "ft_rank": item.get("ft_rank"),
-                    "vec_sim": item.get("vec_sim"),
-                    "ft_score": item.get("ft_score"),
-                    "rrf": item.get("rrf"),
-                    "used": index in used,
-                }
-            )
-
-        cited_docs = []
-        for index in sorted(used):
-            if 1 <= index <= len(public_evidence):
-                title = public_evidence[index - 1]["doc_title"]
-                if title not in cited_docs:
-                    cited_docs.append(title)
-
-        query_id = db.log_query(
-            conn,
-            user_id=settings.user_id,
-            question=question,
-            answer=answer.text,
-            mode=answer.mode,
-            citations=[public_evidence[i - 1] for i in sorted(used) if 1 <= i <= len(public_evidence)],
-            confidence=confidence,
-            latency_ms=total_ms,
-        )
-
-        memory_result: dict[str, Any] = {}
-        try:
-            memory_result = memory.record_ask(
-                question=question,
-                confidence=confidence,
-                answer_mode=answer.mode,
-                cited_docs=cited_docs,
-                weak_topic=answer.mode == "insufficient" or confidence < 0.35,
-            )
-        except Exception as exc:  # noqa: BLE001
-            memory_result = {"source": "error", "error": f"{type(exc).__name__}: {exc}"}
-
-        return {
-            "query_id": query_id,
-            "question": question,
-            "answer": answer.text,
-            "mode": answer.mode,
-            "reason": answer.reason,
-            "style": style,
-            "confidence": confidence,
-            "coverage": round(coverage, 3),
-            "citations": sorted(used),
-            "evidence": public_evidence,
-            "trace": {
-                "vector": [
-                    {
-                        "rank": row["vec_rank"],
-                        "chunk_id": int(row["id"]),
-                        "doc_title": next(
-                            (e["doc_title"] for e in public_evidence if e["chunk_id"] == int(row["id"])),
-                            "",
-                        ),
-                        "heading": row.get("heading", ""),
-                        "vec_sim": row["vec_sim"],
-                        "snippet": row["text"][:120],
-                    }
-                    for row in result["vector"][:10]
-                ],
-                "fulltext": [
-                    {
-                        "rank": row["ft_rank"],
-                        "chunk_id": int(row["id"]),
-                        "doc_title": next(
-                            (e["doc_title"] for e in public_evidence if e["chunk_id"] == int(row["id"])),
-                            "",
-                        ),
-                        "heading": row.get("heading", ""),
-                        "ft_score": row["ft_score"],
-                        "snippet": row["text"][:120],
-                    }
-                    for row in result["fulltext"][:10]
-                ],
-                "params": result["params"],
-                "fused_total": result["fused_total"],
-            },
-            "timings": {"embed_ms": embed_ms, "search_ms": search_ms, "answer_ms": answer_ms, "total_ms": total_ms},
-            "memory": memory_result,
-            "terms": terms,
-        }
-    finally:
-        conn.close()
+class DeleteRequest(BaseModel):
+    doc_id: int
 
 
-@app.get("/api/bootstrap")
-def bootstrap() -> dict[str, Any]:
-    conn = _conn()
-    try:
-        stats = db.corpus_stats(conn)
-        documents = [
-            {
-                **doc,
-                "created_at": doc["created_at"].isoformat(sep=" ") if doc.get("created_at") else "",
-            }
-            for doc in db.list_documents(conn)
-        ]
-        history = db.list_history(conn, user_id=settings.user_id)
-    finally:
-        conn.close()
-    return {
-        "app": {"name": "据典", "version": "0.1.0"},
-        "models": {"embed": settings.embed_model, "llm": settings.llm_model},
-        "corpus": stats,
-        "documents": documents,
-        "memory": memory.snapshot(),
-        "history": history,
-        "suggestions": SUGGESTIONS,
-        "memory_kinds": {"profile": PROFILE_KIND, "progress": PROGRESS_KIND},
-    }
-
-
-@app.post("/api/import")
-async def import_file(file: UploadFile = File(...)) -> dict[str, Any]:
-    suffix = Path(file.filename or "").suffix.lower()
-    if suffix not in ALLOWED:
-        raise HTTPException(400, f"只支持 {', '.join(sorted(ALLOWED))} 格式")
-    content = await file.read()
-    if len(content) > MAX_UPLOAD:
-        raise HTTPException(400, "文件超过 20MB 限制")
-    if not content:
-        raise HTTPException(400, "文件为空")
-    safe_name = re.sub(r"[^0-9A-Za-z\u4e00-\u9fff._-]+", "_", Path(file.filename or "upload").name)
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    target = UPLOAD_DIR / f"{int(time.time())}-{safe_name}"
-    target.write_bytes(content)
-    try:
-        summary = run_ingest(target, embedder, title=Path(safe_name).stem)
-    except IngestError as exc:
-        raise HTTPException(400, str(exc)) from exc
-    return {"ok": True, **summary}
-
-
-@app.post("/api/library/delete")
-def delete_document(body: dict[str, int]) -> dict[str, Any]:
-    doc_id = int(body.get("doc_id", 0))
-    if not doc_id:
-        raise HTTPException(400, "缺少 doc_id")
-    conn = _conn()
-    try:
-        db.delete_document(conn, doc_id)
-    finally:
-        conn.close()
-    return {"ok": True}
-
-
-@app.get("/api/history")
-def history(limit: int = 20) -> list[dict[str, Any]]:
-    conn = _conn()
-    try:
-        return db.list_history(conn, user_id=settings.user_id, limit=min(limit, 100))
-    finally:
-        conn.close()
-
-
-class NoteBody(BaseModel):
-    question: str
-    answer: str
+class NoteRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+    answer: str = Field(min_length=1, max_length=20000)
     citations: list[dict[str, Any]] = Field(default_factory=list)
 
 
-@app.post("/api/notes")
-def create_note(body: NoteBody) -> dict[str, Any]:
-    conn = _conn()
-    try:
-        note_id = db.add_note(
-            conn,
-            user_id=settings.user_id,
-            question=body.question[:500],
-            answer=body.answer[:8000],
-            citations=body.citations,
+class ProfileRequest(BaseModel):
+    topic: str = Field(min_length=1, max_length=200)
+    style: str = Field(default="", max_length=100)
+    goal: str = Field(default="", max_length=500)
+
+
+def _evidence_summary(answer: Answer) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for row in answer.evidence:
+        rows.append(
+            {
+                "n": row.get("n"),
+                "chunk_id": row.get("chunk_id"),
+                "doc_id": row.get("doc_id"),
+                "doc_title": row.get("doc_title"),
+                "source": row.get("source"),
+                "heading": row.get("heading"),
+                "page": row.get("page"),
+                "vec_rank": row.get("vec_rank"),
+                "ft_rank": row.get("ft_rank"),
+                "vec_sim": row.get("vec_sim"),
+                "ft_score": row.get("ft_score"),
+                "rrf": row.get("rrf"),
+                "used": row.get("used"),
+            }
         )
-    finally:
-        conn.close()
-    return {"ok": True, "note_id": note_id}
+    return rows
 
 
-@app.get("/api/notes")
-def notes() -> list[dict[str, Any]]:
-    conn = _conn()
+def _gold_questions(settings: Settings, limit: int = 4) -> list[str]:
     try:
-        return db.list_notes(conn, user_id=settings.user_id)
-    finally:
-        conn.close()
+        data = json.loads(settings.gold_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return FALLBACK_SUGGESTIONS[:limit]
+    items = data.get("questions") if isinstance(data, dict) else data
+    if not isinstance(items, list):
+        return FALLBACK_SUGGESTIONS[:limit]
+    questions = [
+        str(item["question"])
+        for item in items
+        if isinstance(item, dict) and item.get("answerable", True) and item.get("question")
+    ]
+    return (questions or FALLBACK_SUGGESTIONS)[:limit]
 
 
-@app.get("/api/memory")
-def get_memory() -> dict[str, Any]:
-    return memory.snapshot()
+def create_app(
+    settings: Settings | None = None,
+    *,
+    db: SeekDB | None = None,
+    embedder: Embedder | None = None,
+    llm: LLMClient | None = None,
+    memory: Memory | None = None,
+    pipeline: Pipeline | None = None,
+) -> FastAPI:
+    settings = settings or get_settings()
+    db = db or SeekDB(settings)
+    embedder = embedder or Embedder(settings)
+    llm = llm or LLMClient(settings)
+    memory = memory or Memory(settings)
+    pipeline = pipeline or Pipeline(settings, db=db, embedder=embedder)
+
+    app = FastAPI(title="据典 Judian", version="1.0.0")
+    app.state.settings = settings
+    app.state.db = db
+    app.state.embedder = embedder
+    app.state.llm = llm
+    app.state.memory = memory
+    app.state.pipeline = pipeline
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        path = settings.static_dir / "index.html"
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="前端未安装")
+        return FileResponse(path)
+
+    @app.get("/api/health")
+    def health() -> dict[str, Any]:
+        def probe_db() -> dict[str, Any]:
+            ok, detail = db.ping()
+            if not ok:
+                return {"db": "down", "db_error": detail, "corpus": None}
+            try:
+                stats = db.stats()
+            except Exception as exc:
+                return {"db": "ok", "db_error": str(exc), "corpus": None}
+            return {"db": "ok", "db_error": None, "corpus": stats}
+
+        def probe_memory() -> dict[str, Any]:
+            ok, detail = memory.health()
+            return {
+                "memory": "ok" if ok else "local",
+                "memory_detail": detail,
+                "memory_source": "powercontext" if ok else "local",
+            }
+
+        probes = {
+            "db": probe_db,
+            "vector": lambda: _health_pair(embedder.available, "向量模型"),
+            "llm": lambda: _health_pair(llm.available, "生成模型"),
+            "memory": probe_memory,
+        }
+        results: dict[str, Any] = {}
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = {name: pool.submit(fn) for name, fn in probes.items()}
+            for name, future in futures.items():
+                try:
+                    results[name] = future.result(timeout=8)
+                except Exception as exc:
+                    results[name] = {"error": str(exc)}
+        db_part = results.get("db") or {}
+        vector_part = results.get("vector") or {}
+        llm_part = results.get("llm") or {}
+        memory_part = results.get("memory") or {}
+        payload = {
+            "ok": db_part.get("db") == "ok",
+            "db": db_part.get("db", "down"),
+            "db_error": db_part.get("db_error"),
+            "corpus": db_part.get("corpus"),
+            "vector": vector_part.get("ok", False),
+            "vector_detail": vector_part.get("detail", ""),
+            "llm": llm_part.get("ok", False),
+            "llm_detail": llm_part.get("detail", ""),
+            "memory": memory_part.get("memory", "local"),
+            "memory_detail": memory_part.get("memory_detail", ""),
+            "memory_source": memory_part.get("memory_source", "local"),
+            "models": {
+                "embedding": settings.embed_model,
+                "llm": settings.llm_model,
+            },
+        }
+        return payload
+
+    @app.get("/api/bootstrap")
+    def bootstrap() -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "user": settings.user,
+            "documents": [],
+            "stats": None,
+            "memory": memory.snapshot(),
+            "history": [],
+            "suggestions": _gold_questions(settings),
+            "db": "down",
+            "error": None,
+        }
+        try:
+            payload["documents"] = db.list_documents()
+            payload["stats"] = db.stats()
+            payload["history"] = db.history(limit=12)
+            payload["db"] = "ok"
+        except DBUnavailable as exc:
+            payload["error"] = str(exc)
+        except Exception as exc:
+            payload["error"] = str(exc)
+        return payload
+
+    @app.post("/api/ask")
+    def ask(request: AskRequest) -> dict[str, Any]:
+        question = request.question.strip()
+        if not question:
+            raise HTTPException(status_code=400, detail="问题不能为空")
+        started = time.perf_counter()
+
+        query_vector: list[float] | None = None
+        embedding_error: str | None = None
+        try:
+            query_vector = embedder.embed_query(question)
+        except EmbeddingError as exc:
+            embedding_error = str(exc)
+
+        try:
+            retrieved = db.hybrid_search(question, query_vector, doc_id=request.doc_id)
+        except DBUnavailable as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+        profile = None
+        memory_snapshot: dict[str, Any] | None = None
+        try:
+            memory_snapshot = memory.snapshot()
+            profile = memory_snapshot.get("profile")
+        except Exception:
+            memory_snapshot = None
+
+        answer = answer_question(
+            question,
+            retrieved["fused"],
+            retrieved["vector"],
+            retrieved["fulltext"],
+            settings=settings,
+            llm=llm,
+            corpus_contains=db.corpus_contains,
+            profile=profile if isinstance(profile, dict) else None,
+            style=request.style,
+        )
+
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        evidence_summary = _evidence_summary(answer)
+        if settings.log_queries:
+            db.log_query(
+                user_id=settings.user,
+                question=question,
+                answer=answer.answer,
+                mode=answer.mode,
+                confidence=answer.confidence,
+                citations=answer.citations,
+                evidence=evidence_summary,
+                elapsed_ms=elapsed_ms,
+            )
+
+        memory_result: dict[str, Any] = {"source": "local"}
+        try:
+            memory_result = memory.record_progress(
+                question=question,
+                confidence=answer.confidence,
+                mode=answer.mode,
+                docs=[str(c.get("doc_title") or "") for c in answer.citations],
+                insufficient=answer.mode == "insufficient",
+            )
+        except Exception as exc:
+            memory_result = {"source": "local", "error": str(exc)}
+
+        payload = answer.to_dict()
+        payload.update(
+            {
+                "question": question,
+                "doc_id": request.doc_id,
+                "elapsed_ms": elapsed_ms,
+                "embedding": {
+                    "used": query_vector is not None,
+                    "model": settings.embed_model,
+                    "error": embedding_error,
+                },
+                "memory": {
+                    "source": memory_result.get("source", "local"),
+                    "connected": memory_result.get("source") == "powercontext",
+                },
+                "evidence": answer.evidence,
+            }
+        )
+        return payload
+
+    @app.post("/api/import")
+    def import_document(file: UploadFile = File(...)) -> dict[str, Any]:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="缺少文件名")
+        limit = settings.max_upload_mb * 1024 * 1024
+        data = file.file.read(limit + 1)
+        if len(data) > limit:
+            raise HTTPException(
+                status_code=413,
+                detail=f"文件超过 {settings.max_upload_mb}MB 限制",
+            )
+        if not data:
+            raise HTTPException(status_code=400, detail="文件为空")
+        try:
+            report = pipeline.ingest_upload(file.filename, data)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except EmbeddingError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except DBUnavailable as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        payload = {"ok": True}
+        payload.update(report.to_dict())
+        return payload
+
+    @app.post("/api/library/delete")
+    def delete_document(request: DeleteRequest) -> dict[str, Any]:
+        try:
+            deleted = db.delete_document(request.doc_id)
+        except DBUnavailable as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        if not deleted:
+            raise HTTPException(status_code=404, detail="资料不存在")
+        return {"ok": True, "doc_id": request.doc_id}
+
+    @app.get("/api/history")
+    def history(limit: int = 20) -> dict[str, Any]:
+        limit = max(1, min(limit, 100))
+        try:
+            return {"items": db.history(limit=limit)}
+        except DBUnavailable as exc:
+            return JSONResponse(
+                status_code=200,
+                content={"items": [], "error": str(exc)},
+            )
+
+    @app.get("/api/notes")
+    def list_notes(limit: int = 50) -> dict[str, Any]:
+        limit = max(1, min(limit, 200))
+        try:
+            return {"items": db.notes(limit=limit)}
+        except DBUnavailable as exc:
+            return JSONResponse(
+                status_code=200,
+                content={"items": [], "error": str(exc)},
+            )
+
+    @app.post("/api/notes")
+    def add_note(request: NoteRequest) -> dict[str, Any]:
+        valid = [
+            item
+            for item in request.citations
+            if isinstance(item, dict) and item.get("chunk_id") is not None
+        ]
+        try:
+            note = db.add_note(
+                user_id=settings.user,
+                question=request.question.strip(),
+                answer=request.answer,
+                citations=valid,
+            )
+        except DBUnavailable as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return {"ok": True, "note": note}
+
+    @app.get("/api/memory")
+    def get_memory() -> dict[str, Any]:
+        return memory.snapshot()
+
+    @app.post("/api/memory/profile")
+    def save_profile(request: ProfileRequest) -> dict[str, Any]:
+        topic = request.topic.strip()
+        if not topic:
+            raise HTTPException(status_code=400, detail="研究主题不能为空")
+        result = memory.save_profile(topic, request.style, request.goal)
+        return {"ok": True, **result}
+
+    @app.get("/api/eval")
+    def eval_report() -> dict[str, Any]:
+        path = settings.evidence_dir / "eval.json"
+        if not path.exists():
+            return {
+                "available": False,
+                "message": "尚未生成评测结果，请先运行 .venv/bin/python scripts/eval.py",
+            }
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            return {"available": False, "message": f"评测结果读取失败: {exc}"}
+        if isinstance(data, dict):
+            data.setdefault("available", True)
+            return data
+        return {"available": False, "message": "评测结果格式不正确"}
+
+    @app.get("/api/documents")
+    def documents() -> dict[str, Any]:
+        try:
+            return {"items": db.list_documents()}
+        except DBUnavailable as exc:
+            return JSONResponse(
+                status_code=200,
+                content={"items": [], "error": str(exc)},
+            )
+
+    @app.get("/api/corpus")
+    def corpus() -> dict[str, Any]:
+        items = []
+        try:
+            for document in parse_corpus(settings.corpus_dir):
+                items.append(
+                    {
+                        "source": document.source,
+                        "title": document.title,
+                        "kind": document.kind,
+                        "chars": document.chars,
+                        "chunks": len(document.chunks),
+                    }
+                )
+        except Exception as exc:
+            return {"items": [], "error": str(exc)}
+        return {"items": items}
+
+    static_dir = settings.static_dir
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    return app
 
 
-class ProfileBody(BaseModel):
-    topic: str = ""
-    style: str = "concise"
-    goal: str = ""
+def _health_pair(probe: Any, label: str) -> dict[str, Any]:
+    try:
+        ok, detail = probe()
+    except Exception as exc:
+        return {"ok": False, "detail": f"{label}检查失败: {exc}"}
+    return {"ok": bool(ok), "detail": str(detail)}
 
 
-@app.post("/api/memory/profile")
-def set_profile(body: ProfileBody) -> dict[str, Any]:
-    result = memory.save_profile(topic=body.topic, style=body.style, goal=body.goal)
-    return {"ok": True, **result, "snapshot": memory.snapshot()}
-
-
-@app.get("/api/eval")
-def evaluation() -> JSONResponse:
-    path = Path(__file__).resolve().parent.parent / "docs" / "evidence" / "eval.json"
-    if not path.exists():
-        return JSONResponse({"available": False, "hint": "运行 scripts/eval.py 生成评测结果"})
-    import json
-
-    return JSONResponse({"available": True, **json.loads(path.read_text(encoding="utf-8"))})
+app = create_app()

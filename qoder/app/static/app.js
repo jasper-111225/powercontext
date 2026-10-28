@@ -1,668 +1,862 @@
-/* 据典 · 前端（无构建步骤，单文件） */
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
-const S = {
-  boot: null,
-  memory: null,
-  current: null,
-  busy: false,
+const state = {
+  bootstrap: null,
+  health: null,
+  answer: null,
+  selectedDoc: null,
   view: "ask",
-  docs: [],
+  asking: false,
 };
 
-/* ------------------------------------------------------------------ utils */
-function esc(value) {
+function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
-function toast(message, ms = 2200) {
-  const el = $("#toast");
-  el.textContent = message;
-  el.hidden = false;
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => (el.hidden = true), ms);
+function shortTime(value) {
+  if (!value) return "";
+  const text = String(value);
+  const match = text.match(/\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/);
+  if (match) return match[1];
+  return text.length > 16 ? text.slice(0, 16) : text;
 }
 
-function fmt(n) {
-  return Number(n || 0).toLocaleString("zh-CN");
-}
-
-function size(n) {
-  if (n > 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + " MB";
-  if (n > 1024) return (n / 1024).toFixed(1) + " KB";
-  return n + " B";
-}
-
-function citeChip(n) {
-  return `<button class="cite" data-cite="${n}" title="查看第 ${n} 条证据">${n}</button>`;
-}
-
-function markTerms(text, terms) {
-  let html = esc(text);
-  (terms || [])
-    .filter((t) => t && t.length >= 2)
-    .sort((a, b) => b.length - a.length)
-    .slice(0, 8)
-    .forEach((term) => {
-      const safe = esc(term).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      html = html.replace(new RegExp(safe, "gi"), (m) => `<mark>${m}</mark>`);
-    });
-  return html;
-}
-
-/* ------------------------------------------------------------- answer html */
-function answerHtml(text, citations) {
-  const allowed = new Set(citations || []);
-  const lines = esc(text).split(/\n+/);
-  const out = [];
-  let list = [];
-
-  const inline = (line) =>
-    line
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\[(\d{1,2})\]/g, (m, n) => (allowed.has(Number(n)) ? citeChip(n) : ""));
-
-  const flushList = () => {
-    if (list.length) {
-      out.push(`<ul>${list.map((li) => `<li>${inline(li)}</li>`).join("")}</ul>`);
-      list = [];
-    }
-  };
-
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) continue;
-    if (/^[-*•]\s+/.test(line)) {
-      list.push(line.replace(/^[-*•]\s+/, ""));
-    } else if (/^\d+[.、]\s+/.test(line)) {
-      list.push(line.replace(/^\d+[.、]\s+/, ""));
-    } else {
-      flushList();
-      out.push(`<p>${inline(line)}</p>`);
-    }
+async function api(path, options = {}) {
+  const response = await fetch(path, options);
+  let body = null;
+  try {
+    body = await response.json();
+  } catch (_error) {
+    body = null;
   }
-  flushList();
-  return out.join("");
+  if (!response.ok) {
+    let detail = body && body.detail;
+    if (Array.isArray(detail)) {
+      detail = detail.map((item) => item.msg || JSON.stringify(item)).join("；");
+    }
+    throw new Error(detail || `请求失败（HTTP ${response.status}）`);
+  }
+  return body;
 }
 
-/* ---------------------------------------------------------------- bootstrap */
+let toastTimer = null;
+function toast(message, isError = false) {
+  const node = $("#toast");
+  node.textContent = message;
+  node.classList.toggle("error", Boolean(isError));
+  node.classList.remove("hidden");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => node.classList.add("hidden"), 3600);
+}
+
+/* ------------------------------------------------------------------ health */
+function renderHealth(health) {
+  state.health = health;
+  const chips = [];
+  const dbOk = health.db === "ok";
+  const corpus = health.corpus || {};
+  chips.push(
+    `<span class="chip ${dbOk ? "ok" : "down"}" title="${escapeHtml(
+      dbOk ? `seekdb 已连接 · ${corpus.chunks ?? 0} 个片段` : health.db_error || "seekdb 未连接"
+    )}">seekdb${dbOk ? "" : " 离线"}</span>`
+  );
+  const vectorOk = Boolean(health.vector);
+  chips.push(
+    `<span class="chip ${vectorOk ? "ok" : "warn"}" title="${escapeHtml(
+      health.vector_detail || ""
+    )}">向量${vectorOk ? "" : " 不可用"}</span>`
+  );
+  const llmOk = Boolean(health.llm);
+  chips.push(
+    `<span class="chip ${llmOk ? "ok" : "warn"}" title="${escapeHtml(
+      health.llm_detail || ""
+    )}">生成${llmOk ? "" : " 摘录"}</span>`
+  );
+  const memOk = health.memory === "ok";
+  chips.push(
+    `<span class="chip ${memOk ? "ok" : "warn"}" title="${escapeHtml(
+      health.memory_detail || ""
+    )}">记忆${memOk ? "" : " 本地"}</span>`
+  );
+  $("#health-chips").innerHTML = chips.join("");
+}
+
+async function refreshHealth() {
+  try {
+    renderHealth(await api("/api/health"));
+  } catch (error) {
+    $("#health-chips").innerHTML = `<span class="chip down">服务未响应</span>`;
+  }
+}
+
+/* --------------------------------------------------------------- bootstrap */
 async function loadBootstrap() {
-  const data = await fetch("/api/bootstrap").then((r) => r.json());
-  S.boot = data;
-  S.docs = data.documents || [];
-  S.memory = data.memory || {};
-  renderLibrary();
-  renderHistory(data.history || []);
-  renderMemory();
-  renderSuggestions(data.suggestions || []);
-  $("#hero-docs").textContent = fmt(data.corpus?.documents);
-  $("#hero-chunks").textContent = fmt(data.corpus?.chunks);
-  $("#doc-count").textContent = fmt(data.corpus?.documents);
-  $("#ready-hint").textContent = data.corpus?.chunks
-    ? `资料库 ${fmt(data.corpus.documents)} 篇 / ${fmt(data.corpus.chunks)} 个片段`
-    : "资料库为空，先导入资料";
+  try {
+    const data = await api("/api/bootstrap");
+    state.bootstrap = data;
+    renderLibrary();
+    renderLibraryView();
+    renderMemory(data.memory);
+    renderRecent(data.history || []);
+    renderSuggestions(data.suggestions || []);
+    renderDocFilter();
+    $("#library-summary").textContent = data.stats
+      ? `${data.stats.documents} 篇 · ${data.stats.chunks} 个片段 · ${data.stats.chars} 字符`
+      : data.error
+      ? "seekdb 未连接"
+      : "资料库为空";
+  } catch (error) {
+    toast(error.message, true);
+    $("#library-summary").textContent = "无法读取资料库";
+  }
 }
 
 function renderSuggestions(items) {
-  $("#suggestions").innerHTML = items
-    .map((q) => `<button class="chip" data-ask="${esc(q)}">${esc(q)}</button>`)
-    .join("");
-}
-
-function renderHistory(items) {
-  const box = $("#history-list");
-  if (!items.length) {
-    box.innerHTML = `<div class="hint">还没有提问记录。</div>`;
-    return;
-  }
+  const box = $("#suggestions");
   box.innerHTML = items
-    .slice(0, 10)
     .map(
-      (item) =>
-        `<button class="history-item" data-ask="${esc(item.question)}" title="${esc(item.question)}">${esc(
-          item.question
-        )}</button>`
+      (question) =>
+        `<button class="suggestion" data-q="${escapeHtml(question)}">${escapeHtml(question)}</button>`
     )
     .join("");
+  $$(".suggestion", box).forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = $("#question");
+      input.value = button.dataset.q || "";
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
+  });
 }
 
 function renderLibrary() {
-  const docs = S.docs || [];
-  $("#doc-list").innerHTML =
-    docs
-      .map(
-        (doc) =>
-          `<button class="doc-item" data-doc="${doc.id}" title="${esc(doc.title)}">
-             <span class="dot ${esc(doc.kind)}"></span>
-             <span class="t">${esc(doc.title)}</span>
-             <span class="n">${fmt(doc.chunks)}</span>
-           </button>`
-      )
-      .join("") || `<div class="hint">资料库还是空的。</div>`;
-}
-
-/* ------------------------------------------------------------------ memory */
-function renderMemory() {
-  const memory = S.memory || {};
-  const profile = memory.profile || {};
-  const progress = memory.progress || {};
-  const topic = profile.topic || "";
-  const style = profile.style === "detailed" ? "详细" : "简洁";
-
-  // 侧栏
-  const bits = [];
-  if (topic) bits.push(`研究 <b>${esc(topic)}</b>`);
-  if (profile.goal) bits.push(`目标：${esc(profile.goal)}`);
-  if (progress.asked) bits.push(`已问 ${progress.asked} 次`);
-  if (progress.last_question) bits.push(`上次：${esc(progress.last_question.slice(0, 34))}`);
-  $("#memory-mini-body").innerHTML = bits.length
-    ? bits.map((b) => `<div>${b}</div>`).join("") +
-      `<div><span class="memory-pill">${style}回答</span><span class="memory-pill">${
-        memory.connected ? "PowerContext" : "本地暂存"
-      }</span></div>`
-    : `<span class="none">还没有记忆。设置研究主题后，我会在下次见面时记得。</span>`;
-
-  // 顶部横幅
-  const banner = $("#memory-banner");
-  if (topic || progress.last_question) {
-    banner.hidden = false;
-    banner.innerHTML = `
-      <span>我记得：${topic ? `你在研究 <b>${esc(topic)}</b>` : "你在这里学习"}。</span>
-      ${progress.last_question ? `<span>上次停在 <b>${esc(progress.last_question.slice(0, 46))}</b></span>` : ""}
-      <button id="banner-continue">继续上次</button>
-      <button id="banner-edit">调整记忆</button>`;
-    $("#banner-continue").onclick = () => {
-      if (progress.last_question) ask(progress.last_question);
-      else $("#question").focus();
-    };
-    $("#banner-edit").onclick = openMemory;
-  } else {
-    banner.hidden = true;
-  }
-
-  // 记忆弹窗
-  $("#m-topic").value = topic;
-  $("#m-goal").value = profile.goal || "";
-  $$('input[name="m-style"]').forEach((el) => (el.checked = el.value === (profile.style || "concise")));
-  $("#m-asked").textContent = progress.asked || 0;
-  $("#m-entries").textContent = memory.entries || 0;
-  $("#m-source").textContent = memory.connected ? "PowerContext" : "本地暂存";
-  $("#m-source").className = memory.connected ? "ok" : "muted";
-  $("#m-last").textContent = progress.last_question || "还没有记录";
-  const weak = progress.weak_topics || [];
-  $("#m-weak").innerHTML = weak.length
-    ? weak.map((t) => `<li>${esc(t)}</li>`).join("")
-    : "<li class='muted'>暂无，继续提问会出现。</li>";
-  $("#memory-source").textContent = memory.connected
-    ? `已连接 PowerContext（Scope ${memory.scope_id || "—"}）· 重启 Server 后记忆仍在`
-    : `PowerContext 未连接：${memory.error || "请先启动"}（当前写入本地 .runtime）`;
-  const entries = memory.recent || [];
-  $("#m-entries-list").innerHTML = entries.length
-    ? entries
-        .map(
-          (entry) =>
-            `<div class="memory-entry"><code>${esc(entry.kind)}</code><span title="${esc(
-              entry.text
-            )}">${esc(memoryEntryLabel(entry))}</span></div>`
-        )
-        .join("")
-    : `<div class="hint">还没有记忆条目。</div>`;
-}
-
-function memoryEntryLabel(entry) {
-  try {
-    const value = JSON.parse(entry.text);
-    if (value.topic) return `研究：${value.topic}`;
-    if (value.last_question) return `上次：${value.last_question}`;
-    return JSON.stringify(value);
-  } catch {
-    return entry.text;
-  }
-}
-
-function openMemory() {
-  renderMemory();
-  $("#memory-dialog").showModal();
-}
-
-async function saveProfile() {
-  const topic = $("#m-topic").value.trim();
-  const goal = $("#m-goal").value.trim();
-  const style = $$('input[name="m-style"]').find((el) => el.checked)?.value || "concise";
-  const response = await fetch("/api/memory/profile", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ topic, style, goal }),
-  }).then((r) => r.json());
-  S.memory = response.snapshot || S.memory;
-  renderMemory();
-  toast(response.source === "powercontext" ? "已写入 PowerContext 记忆" : "PowerContext 未连接，已本地暂存");
-}
-
-/* --------------------------------------------------------------- ask flow */
-async function ask(question) {
-  if (S.busy) return;
-  question = (question || "").trim();
-  if (!question) return;
-  if (!S.boot?.corpus?.chunks) {
-    toast("资料库为空，请先导入资料");
+  const items = (state.bootstrap && state.bootstrap.documents) || [];
+  const box = $("#library-list");
+  if (!items.length) {
+    box.innerHTML = `<div class="library-empty">还没有资料。点击「导入资料」加入 Markdown / PDF / 笔记。</div>`;
     return;
   }
-  S.busy = true;
-  $("#send").disabled = true;
-  $("#hero").style.display = "none";
-
-  const skeleton = document.createElement("article");
-  skeleton.className = "answer-card";
-  skeleton.id = "pending";
-  skeleton.innerHTML = `<div class="q-row"><span class="q-mark">问</span><h3>${esc(question)}</h3></div>
-    <div class="skeleton">正在检索证据并组织答案</div>`;
-  $("#thread").appendChild(skeleton);
-  skeleton.scrollIntoView({ behavior: "smooth", block: "start" });
-
-  try {
-    const response = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        question,
-        style: $("#style-detailed").checked ? "detailed" : "concise",
-      }),
+  box.innerHTML = items
+    .map(
+      (doc) => `
+      <button class="library-item${state.selectedDoc && state.selectedDoc.id === doc.id ? " active" : ""}" data-doc="${doc.id}" data-title="${escapeHtml(doc.title)}">
+        <span class="li-title">${escapeHtml(doc.title)}</span>
+        <span class="li-meta">${escapeHtml(doc.kind)} · ${doc.chunks} 片段 · ${doc.chars} 字符</span>
+      </button>`
+    )
+    .join("");
+  $$(".library-item", box).forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = Number(button.dataset.doc);
+      if (state.selectedDoc && state.selectedDoc.id === id) {
+        setDocFilter(null);
+      } else {
+        setDocFilter({ id, title: button.dataset.title || `资料 ${id}` });
+        setView("ask");
+      }
+      renderLibrary();
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "请求失败");
-    skeleton.remove();
-    S.current = data;
-    renderAnswer(data);
-    renderEvidence(data);
-    if (data.memory?.source) {
-      // 记忆快照可能已变化，轻量刷新一次
-      fetch("/api/memory")
-        .then((r) => r.json())
-        .then((m) => {
-          S.memory = m;
-          renderMemory();
-        });
-    }
-    fetch("/api/history")
-      .then((r) => r.json())
-      .then(renderHistory);
-  } catch (error) {
-    skeleton.remove();
-    toast(error.message || "提问失败");
-    if (!S.current) $("#hero").style.display = "";
-  } finally {
-    S.busy = false;
-    $("#send").disabled = false;
+  });
+}
+
+function setDocFilter(doc) {
+  state.selectedDoc = doc;
+  renderDocFilter();
+  renderLibrary();
+}
+
+function renderDocFilter() {
+  const node = $("#doc-filter");
+  if (!node) return;
+  if (!state.selectedDoc) {
+    node.classList.add("hidden");
+    node.innerHTML = "";
+    return;
+  }
+  node.classList.remove("hidden");
+  node.innerHTML = `仅在这篇资料里检索：<strong>${escapeHtml(
+    state.selectedDoc.title
+  )}</strong> <button class="small" id="clear-doc-filter">取消限定</button>`;
+  const clear = $("#clear-doc-filter");
+  if (clear) {
+    clear.addEventListener("click", () => setDocFilter(null));
   }
 }
 
-function renderAnswer(data) {
-  const card = document.createElement("article");
-  card.className = "answer-card";
-  const modeLabel = {
-    llm: "模型改写 · 引用已核验",
-    extractive: "原文摘录 · 逐句可核验",
-    insufficient: "资料不足 · 拒绝作答",
-  }[data.mode] || data.mode;
-  const conf = Math.round((data.confidence || 0) * 100);
-  const confClass = conf < 35 ? "bad" : conf < 55 ? "low" : "";
-  const seconds = ((data.timings?.total_ms || 0) / 1000).toFixed(1);
+function renderMemory(snapshot) {
+  if (!snapshot) return;
+  const badge = $("#memory-source");
+  const remote = snapshot.source === "powercontext";
+  badge.textContent = remote ? "PowerContext" : "本地暂存";
+  badge.className = `badge ${remote ? "badge-powercontext" : "badge-local"}`;
+  badge.title = snapshot.error || (remote ? `Scope ${snapshot.scope_id || ""}` : "PowerContext 不可用时的降级存储");
 
-  card.innerHTML = `
-    <div class="q-row"><span class="q-mark">问</span><h3>${esc(data.question)}</h3></div>
-    <div class="answer-meta">
-      <span class="badge ${esc(data.mode)}">${esc(modeLabel)}</span>
-      <span class="conf ${confClass}"><span class="bar"><i style="width:${conf}%"></i></span><b>${conf}%</b> 证据置信度</span>
-      <span>${seconds}s · ${data.evidence?.length || 0} 条证据</span>
-      <span class="muted">${data.style === "detailed" ? "详细模式" : "简洁模式"}</span>
-    </div>
-    <div class="answer-body">${answerHtml(data.answer, data.citations)}</div>
-    <div class="answer-actions">
-      <button data-act="note">＋ 收进笔记</button>
-      <button data-act="copy">复制答案</button>
-      <button data-act="trace">看检索轨迹</button>
-      <span class="spacer"></span>
-      <span class="stamp">query #${data.query_id} · ${new Date().toLocaleTimeString("zh-CN", { hour12: false })}</span>
-    </div>
-    ${
-      data.reason
-        ? `<details class="answer-note"><summary>为什么这样作答</summary><p>${esc(data.reason)}</p></details>`
-        : ""
-    }`;
+  const profile = snapshot.profile || {};
+  const progress = snapshot.progress || {};
+  const box = $("#memory-summary");
+  if (!profile.topic && !progress.asked) {
+    box.innerHTML = `<span class="muted">还没有记忆。点右上角「我的学习记忆」写下研究主题。</span>`;
+  } else {
+    const rows = [];
+    if (profile.topic) rows.push(`<dt>主题</dt><dd class="mem-topic">${escapeHtml(profile.topic)}</dd>`);
+    if (profile.goal) rows.push(`<dt>目标</dt><dd>${escapeHtml(profile.goal)}</dd>`);
+    if (profile.style) rows.push(`<dt>偏好</dt><dd>${profile.style === "detailed" ? "详细" : "简洁"}</dd>`);
+    if (progress.asked) rows.push(`<dt>提问</dt><dd>${progress.asked} 次${progress.last_mode ? ` · 上次 ${escapeHtml(progress.last_mode)}` : ""}</dd>`);
+    if (progress.last_question) rows.push(`<dt>上次</dt><dd>${escapeHtml(progress.last_question)}</dd>`);
+    if (Array.isArray(progress.weak_topics) && progress.weak_topics.length) {
+      rows.push(`<dt>薄弱</dt><dd>${progress.weak_topics.map(escapeHtml).join("；")}</dd>`);
+    }
+    box.innerHTML = `<dl>${rows.join("")}</dl>`;
+  }
 
-  card.querySelector('[data-act="copy"]').onclick = async () => {
-    await navigator.clipboard.writeText(data.answer.replace(/\[(\d+)\]/g, "[$1]"));
-    toast("答案已复制");
-  };
-  card.querySelector('[data-act="note"]').onclick = async () => {
-    const response = await fetch("/api/notes", {
+  const banner = $("#memory-banner");
+  if (profile.topic) {
+    const last = progress.last_question ? ` · 上次停在「${escapeHtml(progress.last_question)}」` : "";
+    banner.innerHTML = `<strong>我记得：</strong>你在研究 <strong>${escapeHtml(
+      profile.topic
+    )}</strong>${last}。`;
+    banner.classList.remove("hidden");
+  } else {
+    banner.classList.add("hidden");
+  }
+}
+
+function renderRecent(items) {
+  const box = $("#recent-list");
+  if (!items.length) {
+    box.innerHTML = `<div class="library-empty">还没有提问记录。</div>`;
+    return;
+  }
+  box.innerHTML = items
+    .map(
+      (item) => `
+      <button class="recent-item" data-q="${escapeHtml(item.question)}">
+        ${escapeHtml(item.question)}
+        <small>${shortTime(item.created_at)} · ${escapeHtml(item.mode || "")}${item.confidence ? ` · ${Number(item.confidence).toFixed(2)}` : ""}</small>
+      </button>`
+    )
+    .join("");
+  $$(".recent-item", box).forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = $("#question");
+      input.value = button.dataset.q || "";
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    });
+  });
+}
+
+/* --------------------------------------------------------------------- ask */
+function citeButtons(escaped, maxN) {
+  return escaped.replace(/\[(\d{1,2})\]/g, (match, number) => {
+    const n = Number(number);
+    if (!Number.isFinite(n) || n < 1 || n > maxN) return match;
+    return `<button class="cite" data-n="${n}" title="查看第 ${n} 条证据">[${n}]</button>`;
+  });
+}
+
+function renderBody(text, maxN) {
+  const lines = String(text || "").split("\n");
+  const html = [];
+  let inList = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
+      continue;
+    }
+    if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
+      if (!inList) {
+        html.push("<ul>");
+        inList = true;
+      }
+      html.push(`<li>${citeButtons(escapeHtml(trimmed.slice(2)), maxN)}</li>`);
+    } else {
+      if (inList) {
+        html.push("</ul>");
+        inList = false;
+      }
+      html.push(`<p>${citeButtons(escapeHtml(trimmed), maxN)}</p>`);
+    }
+  }
+  if (inList) html.push("</ul>");
+  return html.join("") || "<p></p>";
+}
+
+function modeLabel(mode) {
+  if (mode === "llm") return "模型作答";
+  if (mode === "extractive") return "原文摘录";
+  if (mode === "insufficient") return "资料不足";
+  return mode || "回答";
+}
+
+function renderAssistantMessage(data) {
+  const maxN = (data.evidence || []).length;
+  const wrapper = document.createElement("div");
+  wrapper.className = "msg msg-assistant";
+  const memoryLabel = data.memory && data.memory.source === "powercontext" ? "PowerContext" : "本地暂存";
+  const embedWarn = data.embedding && data.embedding.error
+    ? `<span class="reason">向量不可用，本次仅全文检索：${escapeHtml(data.embedding.error)}</span>`
+    : "";
+  const reason = data.reason
+    ? `<span class="reason">${escapeHtml(data.reason)}</span>`
+    : `<span class="reason">${embedWarn || "只依据检索到的原文作答"}</span>`;
+  wrapper.innerHTML = `
+    <div class="avatar" aria-hidden="true">典</div>
+    <div class="bubble-assistant">
+      <div class="answer-head">
+        <span class="mode-badge mode-${escapeHtml(data.mode)}">${escapeHtml(modeLabel(data.mode))}</span>
+        <span class="meta">置信度 ${Number(data.confidence || 0).toFixed(2)} · ${data.elapsed_ms ?? 0} ms · 记忆 ${memoryLabel}</span>
+      </div>
+      <div class="answer-body">${renderBody(data.answer, maxN)}</div>
+      <div class="answer-foot">
+        ${reason}
+        <span class="answer-actions">
+          ${data.mode === "insufficient" ? "" : `<button data-action="note">收进笔记</button>`}
+        </span>
+      </div>
+    </div>`;
+  const noteButton = $('[data-action="note"]', wrapper);
+  if (noteButton) {
+    noteButton.addEventListener("click", () => saveNote(noteButton, data));
+  }
+  return wrapper;
+}
+
+function appendUserMessage(question) {
+  const node = document.createElement("div");
+  node.className = "msg msg-user";
+  node.innerHTML = `<div class="bubble">${escapeHtml(question)}</div>`;
+  $("#messages").appendChild(node);
+}
+
+async function ask(question) {
+  if (state.asking) return;
+  const trimmed = String(question || "").trim();
+  if (!trimmed) {
+    toast("先写一个问题", true);
+    return;
+  }
+  const welcome = $(".welcome");
+  if (welcome) welcome.remove();
+  state.asking = true;
+  $("#ask-btn").disabled = true;
+  appendUserMessage(trimmed);
+
+  const thinking = document.createElement("div");
+  thinking.className = "msg msg-assistant";
+  thinking.innerHTML = `<div class="avatar" aria-hidden="true">典</div><div class="bubble-assistant"><div class="thinking">正在检索资料并核对引用…</div></div>`;
+  $("#messages").appendChild(thinking);
+  $("#messages").scrollTop = $("#messages").scrollHeight;
+
+  try {
+    const payload = {
+      question: trimmed,
+      style: $("#detailed").checked ? "detailed" : "concise",
+    };
+    if (state.selectedDoc) payload.doc_id = state.selectedDoc.id;
+    const data = await api("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    state.answer = data;
+    thinking.replaceWith(renderAssistantMessage(data));
+    renderEvidence(data.evidence || [], data.trace || {});
+    const input = $("#question");
+    input.value = "";
+    autoGrow(input);
+    if (state.bootstrap) {
+      state.bootstrap.history = [
+        {
+          id: `local-${Date.now()}`,
+          question: trimmed,
+          mode: data.mode,
+          confidence: data.confidence,
+          created_at: new Date().toISOString(),
+        },
+        ...(state.bootstrap.history || []),
+      ].slice(0, 12);
+      renderRecent(state.bootstrap.history);
+    }
+    api("/api/memory")
+      .then((snapshot) => {
+        renderMemory(snapshot);
+        if (state.bootstrap) state.bootstrap.memory = snapshot;
+      })
+      .catch(() => {});
+  } catch (error) {
+    thinking.innerHTML = `<div class="avatar" aria-hidden="true">典</div><div class="bubble-assistant"><div class="answer-body"><p>${escapeHtml(
+      error.message
+    )}</p></div><div class="reason">请确认 seekdb 已启动，或稍后重试。</div></div>`;
+    toast(error.message, true);
+  } finally {
+    state.asking = false;
+    $("#ask-btn").disabled = false;
+    $("#messages").scrollTop = $("#messages").scrollHeight;
+  }
+}
+
+async function saveNote(button, data) {
+  button.disabled = true;
+  try {
+    await api("/api/notes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         question: data.question,
         answer: data.answer,
-        citations: data.evidence.filter((e) => e.used),
+        citations: data.citations || [],
       }),
     });
-    if (response.ok) toast("已收进笔记");
-    else toast("保存失败");
-  };
-  card.querySelector('[data-act="trace"]').onclick = () => {
-    $("#trace-box").open = true;
-    $("#trace-box").scrollIntoView({ behavior: "smooth", block: "nearest" });
-  };
-  card.addEventListener("click", (event) => {
-    const chip = event.target.closest(".cite");
-    if (chip) focusEvidence(Number(chip.dataset.cite));
-  });
-  $("#thread").appendChild(card);
-  card.scrollIntoView({ behavior: "smooth", block: "start" });
+    button.textContent = "已收藏";
+    toast("已收进笔记");
+  } catch (error) {
+    button.disabled = false;
+    toast(error.message, true);
+  }
 }
 
 /* ---------------------------------------------------------------- evidence */
-function renderEvidence(data) {
+function renderEvidence(evidence, trace) {
+  const count = evidence.length;
+  const used = evidence.filter((row) => row.used).length;
+  $("#evidence-count").textContent = count ? `${count} 条 · ${used} 条被引用` : "没有证据";
   const box = $("#evidence-list");
-  const items = data.evidence || [];
-  $("#evidence-count").textContent = items.length;
-  if (!items.length) {
-    box.innerHTML = `<div class="empty small">这次没有召回到证据。</div>`;
+  if (!count) {
+    box.innerHTML = `<div class="empty-evidence"><p>这次没有检索到可用片段。</p><p class="muted small-text">可以换一种问法，或导入相关资料。</p></div>`;
+    renderTrace(trace || {});
     return;
   }
-  box.innerHTML = items
-    .map((item) => {
-      const ranks = [];
-      if (item.vec_rank) ranks.push(`<span class="rank vec">向量 #${item.vec_rank}</span>`);
-      if (item.ft_rank) ranks.push(`<span class="rank ft">全文 #${item.ft_rank}</span>`);
-      ranks.push(`<span class="rank rrf">RRF ${Number(item.rrf).toFixed(4)}</span>`);
-      return `<article class="ev-card ${item.used ? "used" : ""}" data-ev="${item.index}" id="ev-${item.index}">
-        <div class="ev-top">
-          <span class="ev-index">${item.index}</span>
-          <div>
-            <h4>${esc(item.doc_title)}</h4>
-            <p>${esc(item.heading || "正文")}${item.page ? ` · 第 ${item.page} 页` : ""}</p>
+  box.innerHTML = evidence
+    .map((row) => {
+      const hasRrf = row.rrf !== null && row.rrf !== undefined;
+      const ranks = [
+        `<span class="pill pill-vec${row.vec_rank ? "" : " miss"}">${
+          row.vec_rank ? `向量 #${row.vec_rank}` : "向量 —"
+        }</span>`,
+        `<span class="pill pill-ft${row.ft_rank ? "" : " miss"}">${
+          row.ft_rank ? `全文 #${row.ft_rank}` : "全文 —"
+        }</span>`,
+        `<span class="pill pill-rrf${hasRrf ? "" : " miss"}">${
+          hasRrf ? `RRF ${Number(row.rrf).toFixed(6)}` : "RRF —"
+        }</span>`,
+      ];
+      if (row.vec_sim !== null && row.vec_sim !== undefined) {
+        ranks.push(`<span class="pill">相似度 ${Number(row.vec_sim).toFixed(3)}</span>`);
+      }
+      const heading = row.heading ? ` › ${escapeHtml(row.heading)}` : "";
+      const page = row.page ? ` · 第 ${row.page} 页` : "";
+      return `
+        <article class="evidence-card${row.used ? " used" : ""}" data-n="${row.n}" tabindex="-1">
+          <div class="ev-head">
+            <span class="ev-n">${row.n}</span>
+            <div class="ev-title">
+              <strong>${escapeHtml(row.doc_title || "未命名资料")}</strong>
+              <span>${escapeHtml(row.source || "")}${heading}${page}</span>
+            </div>
           </div>
-        </div>
-        <p class="ev-snippet">${markTerms(item.snippet, data.terms)}</p>
-        <div class="ev-ranks">${ranks.join("")}</div>
-        <button class="open-full" data-full="${item.index}">查看完整原文 ↗</button>
-      </article>`;
+          <div class="ev-rank">${ranks.join("")}</div>
+          <div class="evidence-text">${escapeHtml(row.text || "")}</div>
+          <div class="ev-actions"><button data-action="expand">查看完整原文</button></div>
+        </article>`;
     })
     .join("");
-
-  box.querySelectorAll("[data-full]").forEach((button) => {
-    button.onclick = (event) => {
-      event.stopPropagation();
-      openChunk(Number(button.dataset.full));
-    };
+  $$(".evidence-card", box).forEach((card) => {
+    const expand = $('[data-action="expand"]', card);
+    if (expand) {
+      expand.addEventListener("click", (event) => {
+        event.stopPropagation();
+        card.classList.toggle("expanded");
+        expand.textContent = card.classList.contains("expanded") ? "收起原文" : "查看完整原文";
+      });
+    }
   });
-  box.querySelectorAll(".ev-card").forEach((card) => {
-    card.addEventListener("click", () => openChunk(Number(card.dataset.ev)));
-  });
-  renderTrace(data);
+  renderTrace(trace || {});
 }
 
-function focusEvidence(index) {
-  const panel = $("#evidence-panel");
-  if (window.innerWidth <= 1020) {
-    openChunk(index);
+function traceTable(rows) {
+  if (!Array.isArray(rows) || !rows.length) {
+    return `<p class="muted">没有命中。</p>`;
+  }
+  const body = rows
+    .map(
+      (row) => `<tr>
+        <td>${row.rank}</td>
+        <td>${row.chunk_id}</td>
+        <td class="snip" title="${escapeHtml(row.doc_title || "")}">${escapeHtml(row.doc_title || "")}</td>
+        <td>${row.vec_sim === null || row.vec_sim === undefined ? "—" : Number(row.vec_sim).toFixed(3)}</td>
+        <td>${row.ft_score === null || row.ft_score === undefined ? "—" : Number(row.ft_score).toFixed(3)}</td>
+        <td>${row.rrf === null || row.rrf === undefined ? "—" : Number(row.rrf).toFixed(6)}</td>
+      </tr>`
+    )
+    .join("");
+  return `<table><thead><tr><th>#</th><th>chunk</th><th>文档</th><th>vec</th><th>ft</th><th>RRF</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function renderTrace(trace) {
+  const body = $("#trace-body");
+  const vector = trace.vector || [];
+  const fulltext = trace.fulltext || [];
+  if (!vector.length && !fulltext.length) {
+    body.innerHTML = `<span class="muted">暂无检索。</span>`;
     return;
   }
-  const card = $(`#ev-${index}`);
-  if (!card) return;
-  card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  body.innerHTML = `
+    <h4>向量召回 · cosine_distance</h4>
+    ${traceTable(vector)}
+    <h4>全文召回 · MATCH ... AGAINST</h4>
+    ${traceTable(fulltext)}`;
+}
+
+function highlightEvidence(n) {
+  const card = document.querySelector(`.evidence-card[data-n="${n}"]`);
+  if (!card) {
+    toast(`没有第 ${n} 条证据`, true);
+    return;
+  }
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  card.focus({ preventScroll: true });
   card.classList.add("flash");
-  setTimeout(() => card.classList.remove("flash"), 1200);
-}
-
-function openChunk(index) {
-  const item = S.current?.evidence?.find((e) => e.index === index);
-  if (!item) return;
-  $("#chunk-kicker").textContent = `EVIDENCE ${item.index} · ${item.doc_title}`;
-  $("#chunk-title").textContent = item.heading || "原文片段";
-  $("#chunk-meta").innerHTML = [
-    `向量排名 ${item.vec_rank ?? "—"}`,
-    `全文排名 ${item.ft_rank ?? "—"}`,
-    `相似度 ${item.vec_sim ?? "—"}`,
-    `RRF ${item.rrf}`,
-    item.page ? `第 ${item.page} 页` : "",
-  ]
-    .filter(Boolean)
-    .map((x) => `<span>${esc(x)}</span>`)
-    .join("");
-  $("#chunk-text").textContent = item.text;
-  $("#chunk-dialog").showModal();
-}
-
-function renderTrace(data) {
-  const trace = data.trace || {};
-  const row = (item, value, key) => `
-    <div class="trace-row">
-      <span class="r">${item.rank}</span>
-      <span class="s" title="${esc(item.heading || "")}">${esc(item.heading || item.doc_title || "—")}</span>
-      <span class="muted">${key === "vec" ? Number(item.vec_sim).toFixed(3) : Number(item.ft_score).toFixed(2)}</span>
-    </div>`;
-  $("#trace-body").innerHTML = `
-    <div class="trace-col">
-      <h5>向量近邻 · cosine</h5>
-      ${(trace.vector || []).map((x) => row(x, null, "vec")).join("") || "<div class='hint'>无</div>"}
-    </div>
-    <div class="trace-col">
-      <h5>全文召回 · IK</h5>
-      ${(trace.fulltext || []).map((x) => row(x, null, "ft")).join("") || "<div class='hint'>无</div>"}
-    </div>
-    <div class="trace-formula">score(d) = 1/(${trace.params?.rrf_k || 60} + rank_vector) + 1/(${trace.params?.rrf_k || 60} + rank_fulltext)</div>`;
+  card.classList.remove("expanded");
+  const expand = $('[data-action="expand"]', card);
+  if (expand) expand.textContent = "查看完整原文";
+  window.setTimeout(() => card.classList.remove("flash"), 2400);
 }
 
 /* ------------------------------------------------------------------ library */
-function renderLibraryPage() {
-  if (!S.boot) return;
-  const stats = S.boot.corpus || {};
-  $("#library-stats").innerHTML = [
-    ["资料", fmt(stats.documents), "documents"],
-    ["片段", fmt(stats.chunks), "chunks"],
-    ["字符", fmt(stats.chars), "characters"],
-    ["平均片段", fmt(stats.avg_chunk_chars), "chars / chunk"],
-  ]
-    .map(([label, value, sub]) => `<div class="stat"><b>${value}</b><span>${label} · ${sub}</span></div>`)
-    .join("");
+function renderLibraryView() {
+  const data = state.bootstrap;
+  if (!data) return;
+  const stats = data.stats;
+  $("#library-stats").innerHTML = stats
+    ? [
+        ["资料", stats.documents, "篇"],
+        ["片段", stats.chunks, "个"],
+        ["字符", stats.chars, "字"],
+        ["平均片段", stats.avg_chunk_chars, "字"],
+      ]
+        .map(
+          ([label, value, unit]) =>
+            `<div class="metric"><span>${label}</span><strong>${value ?? 0}</strong><em>${unit}</em></div>`
+        )
+        .join("")
+    : `<div class="metric"><span>seekdb</span><strong>离线</strong><em>资料不可读</em></div>`;
 
-  $("#doc-table-body").innerHTML =
-    (S.docs || [])
-      .map(
-        (doc) => `<tr>
-          <td class="title">${esc(doc.title)}</td>
-          <td><span class="type-tag">${esc(doc.kind)}</span>${doc.pages ? ` <span class="muted">${doc.pages}p</span>` : ""}</td>
-          <td>${fmt(doc.chunks)}</td>
-          <td>${fmt(doc.chars)}</td>
-          <td class="path" title="${esc(doc.source)}">${esc(doc.source.split("/").slice(-2).join("/"))}</td>
-          <td><button class="del" data-del="${doc.id}">移除</button></td>
-        </tr>`
-      )
-      .join("") || `<tr><td colspan="6" class="muted">还没有资料，点右上角导入。</td></tr>`;
-
-  $$("[data-del]").forEach((button) => {
-    button.onclick = async () => {
-      if (!confirm("从资料库移除这篇资料？")) return;
-      await fetch("/api/library/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doc_id: Number(button.dataset.del) }),
-      });
-      await loadBootstrap();
-      renderLibraryPage();
-      toast("已移除");
-    };
+  const items = data.documents || [];
+  const table = $("#library-table");
+  if (!items.length) {
+    table.innerHTML = `<div class="empty-evidence"><p>资料库为空。</p><p class="muted small-text">导出一份 Markdown 或 PDF 试试。</p></div>`;
+    return;
+  }
+  table.innerHTML = `
+    <table class="grid">
+      <thead><tr><th>资料</th><th>来源</th><th>类型</th><th>片段</th><th>字符</th><th>操作</th></tr></thead>
+      <tbody>
+        ${items
+          .map(
+            (doc) => `<tr>
+              <td class="wrap"><strong>${escapeHtml(doc.title)}</strong></td>
+              <td class="wrap"><code>${escapeHtml(doc.source)}</code></td>
+              <td>${escapeHtml(doc.kind)}</td>
+              <td class="num">${doc.chunks}</td>
+              <td class="num">${doc.chars}</td>
+              <td><div class="row-actions"><button class="small danger" data-delete="${doc.id}" data-title="${escapeHtml(doc.title)}">移除</button></div></td>
+            </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>`;
+  $$("[data-delete]", table).forEach((button) => {
+    button.addEventListener("click", () => deleteDocument(button));
   });
+}
+
+async function deleteDocument(button) {
+  const id = Number(button.dataset.delete);
+  const title = button.dataset.title || `资料 ${id}`;
+  if (!window.confirm(`确定移除《${title}》及其全部片段吗？问答历史与笔记会保留。`)) return;
+  button.disabled = true;
+  try {
+    await api("/api/library/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doc_id: id }),
+    });
+    if (state.selectedDoc && state.selectedDoc.id === id) setDocFilter(null);
+    toast(`已移除《${title}》`);
+    await loadBootstrap();
+  } catch (error) {
+    button.disabled = false;
+    toast(error.message, true);
+  }
 }
 
 /* --------------------------------------------------------------------- eval */
-async function loadEval() {
-  const box = $("#eval-body");
-  box.innerHTML = `<div class="empty">正在读取评测结果…</div>`;
-  const data = await fetch("/api/eval").then((r) => r.json());
-  if (!data.available) {
-    box.innerHTML = `<div class="empty">${esc(data.hint || "还没有评测结果")}<br /><br />
-      在项目根目录运行 <code>python scripts/eval.py</code> 生成。</div>`;
-    return;
-  }
-  const m = data.metrics || {};
-  const pct = (v) => (v == null ? "—" : Math.round(v * 100) + "%");
-  box.innerHTML = `
-    <div class="metric-grid">
-      <div class="metric"><b>${pct(m.recall_at_5)}</b><span>Recall@5</span><small>正确文档进入前 5 条的比例</small></div>
-      <div class="metric"><b>${pct(m.citation_hit)}</b><span>引用命中率</span><small>答案引用了正确文档的比例</small></div>
-      <div class="metric"><b>${pct(m.refusal_accuracy)}</b><span>拒答准确率</span><small>无答案问题被正确拒绝</small></div>
-      <div class="metric"><b>${m.p50_latency_ms ?? m.avg_latency_ms ?? "—"}<small style="display:inline">ms</small></b><span>中位响应</span><small>p50 · 均值 ${m.avg_latency_ms || "—"} ms（含模型重载）</small></div>
-    </div>
-    <p class="eval-summary">共 ${m.total || 0} 题（可答 ${m.answerable || 0} / 不可答 ${
-    m.unanswerable || 0
-  }）· 语料 ${fmt(m.corpus_chunks)} 个片段 · 生成模型 <code>${esc(data.model || "—")}</code> · 运行于 ${esc(
-    data.run_at || "—"
-  )}</p>
-    <div class="table-wrap">
-      <table class="eval-table">
-        <thead><tr><th>问题</th><th>期望来源</th><th>Top-5</th><th>作答</th><th>引用</th></tr></thead>
-        <tbody>
-          ${(data.cases || [])
-            .map(
-              (c) => `<tr>
-                <td>${esc(c.question)}</td>
-                <td class="muted">${esc(c.expected || "—")}</td>
-                <td class="${c.recall_hit ? "ok" : "no"}">${c.recall_hit ? "命中" : "未中"}</td>
-                <td class="muted">${esc({llm: "模型改写", extractive: "原文摘录", insufficient: "拒答"}[c.mode] || c.mode || "—")}</td>
-                <td class="${c.citation_hit ? "ok" : c.answerable ? "no" : "muted"}">${
-                c.answerable ? (c.citation_hit ? "命中" : "未中") : c.mode === "insufficient" ? "已拒答" : "未拒答"
-              }</td>
-              </tr>`
-            )
-            .join("")}
-        </tbody>
-      </table>
-    </div>`;
+function percent(value) {
+  if (value === null || value === undefined) return "—";
+  return `${(Number(value) * 100).toFixed(0)}%`;
 }
 
-/* ------------------------------------------------------------------- events */
-function switchView(view) {
-  S.view = view;
-  $$(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
-  $$(".view").forEach((el) => (el.hidden = el.id !== `view-${view}`));
-  $("#evidence-panel").style.display = view === "ask" ? "" : "none";
-  document.querySelector(".layout").classList.toggle("no-evidence", view !== "ask");
-  if (view === "library") renderLibraryPage();
+async function loadEval() {
+  const summary = $("#eval-summary");
+  const note = $("#eval-note");
+  const table = $("#eval-table");
+  summary.innerHTML = "";
+  note.textContent = "正在读取评测结果…";
+  table.innerHTML = "";
+  try {
+    const data = await api("/api/eval");
+    if (!data.available) {
+      note.textContent = data.message || "尚未生成评测结果。";
+      return;
+    }
+    const s = data.summary || {};
+    note.textContent = data.generated_at
+      ? `生成于 ${data.generated_at}${data.model ? ` · 向量模型 ${data.model}` : ""}${data.top_k ? ` · Recall@${data.top_k}` : ""}`
+      : "";
+    summary.innerHTML = [
+      ["Recall@5", percent(s.recall_at_5), `${s.recall_hits ?? 0}/${s.answerable ?? 0}`],
+      ["引用命中", percent(s.citation_hit), `${s.citation_hits ?? 0}/${s.answerable ?? 0}`],
+      ["拒答准确", percent(s.refusal_accuracy), `${s.refusal_hits ?? 0}/${s.unanswerable ?? 0}`],
+      ["中位耗时", s.p50_ms ?? "—", "ms"],
+      ["平均耗时", s.mean_ms ?? "—", "ms"],
+    ]
+      .map(
+        ([label, value, unit]) =>
+          `<div class="metric"><span>${label}</span><strong>${value}</strong><em>${unit}</em></div>`
+      )
+      .join("");
+    const rows = data.questions || [];
+    if (!rows.length) {
+      table.innerHTML = `<div class="empty-evidence"><p>评测结果里没有逐题记录。</p></div>`;
+      return;
+    }
+    table.innerHTML = `
+      <table class="grid">
+        <thead><tr><th>#</th><th>问题</th><th>类型</th><th>模式</th><th>Recall@5</th><th>引用</th><th>拒答</th><th>耗时</th></tr></thead>
+        <tbody>
+          ${rows
+            .map((row) => {
+              const answerable = row.answerable !== false;
+              const recallOk = row.recall_at_5 === true;
+              const citeOk = row.citation_hit === true;
+              const refusalOk = row.refused === true;
+              return `<tr>
+                <td>${escapeHtml(row.id || "")}</td>
+                <td class="wrap">${escapeHtml(row.question || "")}</td>
+                <td>${answerable ? "可答" : "资料外"}</td>
+                <td>${escapeHtml(row.mode || "")}</td>
+                <td><span class="status-dot ${answerable ? (recallOk ? "" : "bad") : ""}"></span>${
+                answerable ? (recallOk ? "命中" : "未命中") : "—"
+              }</td>
+                <td>${
+                  answerable
+                    ? `<span class="status-dot ${citeOk ? "" : "bad"}"></span>${citeOk ? "有" : "无"}`
+                    : `<span class="muted">—</span>`
+                }</td>
+                <td>${
+                  answerable
+                    ? `<span class="muted">—</span>`
+                    : `<span class="status-dot ${refusalOk ? "" : "bad"}"></span>${
+                        refusalOk ? "已拒答" : "未拒答"
+                      }`
+                }</td>
+                <td class="num">${row.elapsed_ms ?? "—"} ms</td>
+              </tr>`;
+            })
+            .join("")}
+        </tbody>
+      </table>`;
+  } catch (error) {
+    note.textContent = error.message;
+  }
+}
+
+/* -------------------------------------------------------------------- view */
+function setView(view) {
+  state.view = view;
+  $$(".tab").forEach((tab) => {
+    const active = tab.dataset.view === view;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", active ? "true" : "false");
+    tab.tabIndex = active ? 0 : -1;
+  });
+  $$(".view").forEach((node) => node.classList.add("hidden"));
+  const target = $(`#view-${view}`);
+  if (target) target.classList.remove("hidden");
+  if (view === "library") renderLibraryView();
   if (view === "eval") loadEval();
 }
 
+/* ------------------------------------------------------------------ memory */
+function openMemory() {
+  const snapshot = (state.bootstrap && state.bootstrap.memory) || {};
+  const profile = snapshot.profile || {};
+  $("#profile-topic").value = profile.topic || "";
+  $("#profile-style").value = profile.style === "detailed" ? "detailed" : "concise";
+  $("#profile-goal").value = profile.goal || "";
+  $("#memory-status").textContent = snapshot.source === "powercontext" ? "当前记忆在 PowerContext。" : "当前记忆在本地暂存。";
+  $("#memory-modal").classList.remove("hidden");
+  $("#profile-topic").focus();
+}
+
+function closeMemory() {
+  $("#memory-modal").classList.add("hidden");
+}
+
+async function saveMemory(event) {
+  event.preventDefault();
+  const topic = $("#profile-topic").value.trim();
+  if (!topic) {
+    toast("研究主题不能为空", true);
+    return;
+  }
+  const status = $("#memory-status");
+  status.textContent = "正在写入…";
+  try {
+    const result = await api("/api/memory/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topic,
+        style: $("#profile-style").value,
+        goal: $("#profile-goal").value.trim(),
+      }),
+    });
+    status.textContent =
+      result.source === "powercontext" ? "已写入 PowerContext。" : "PowerContext 不可用，已写入本地暂存。";
+    toast(result.source === "powercontext" ? "记忆已写入 PowerContext" : "已写入本地暂存");
+    if (state.bootstrap) {
+      state.bootstrap.memory = {
+        ...(state.bootstrap.memory || {}),
+        source: result.source,
+        profile: result.profile,
+      };
+      renderMemory(state.bootstrap.memory);
+    }
+    const snapshot = await api("/api/memory");
+    if (state.bootstrap) state.bootstrap.memory = snapshot;
+    renderMemory(snapshot);
+    window.setTimeout(closeMemory, 600);
+  } catch (error) {
+    status.textContent = error.message;
+    toast(error.message, true);
+  }
+}
+
+/* ------------------------------------------------------------------ import */
 async function importFile(file) {
   if (!file) return;
-  const status = $("#import-status");
-  status.className = "import-status";
-  status.textContent = `正在解析并向量化 ${file.name}……（首次调用模型会稍慢）`;
+  if (file.size > 20 * 1024 * 1024) {
+    toast("文件超过 20MB 限制", true);
+    return;
+  }
   const form = new FormData();
   form.append("file", file);
+  toast(`正在导入并向量化《${file.name}》…`);
   try {
-    const response = await fetch("/api/import", { method: "POST", body: form });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "导入失败");
-    status.className = "import-status ok";
-    status.textContent = `已导入《${data.title}》：${data.chunks} 个片段，${fmt(data.chars)} 字符。`;
+    const result = await api("/api/import", { method: "POST", body: form });
+    toast(`已导入《${result.title}》：${result.chunks} 个片段`);
     await loadBootstrap();
-    renderLibraryPage();
-    setTimeout(() => $("#import-dialog").close(), 900);
+    setView("library");
   } catch (error) {
-    status.className = "import-status err";
-    status.textContent = error.message;
+    toast(error.message, true);
+  } finally {
+    $("#import-input").value = "";
   }
+}
+
+/* ------------------------------------------------------------------- init */
+function autoGrow(textarea) {
+  textarea.style.height = "auto";
+  textarea.style.height = `${Math.min(textarea.scrollHeight, 140)}px`;
 }
 
 function bind() {
-  $$(".tab").forEach((tab) => (tab.onclick = () => switchView(tab.dataset.view)));
-  $("#open-memory").onclick = openMemory;
-  $("#save-memory").onclick = saveProfile;
-
-  $("#open-import").onclick = () => $("#import-dialog").showModal();
-  $("#open-import-2").onclick = () => $("#import-dialog").showModal();
-  $("#file-input").onchange = (event) => importFile(event.target.files[0]);
-
-  const dropzone = $("#dropzone");
-  ["dragenter", "dragover"].forEach((name) =>
-    dropzone.addEventListener(name, (event) => {
+  $$(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => setView(tab.dataset.view));
+    tab.addEventListener("keydown", (event) => {
+      const tabs = $$(".tab");
+      const index = tabs.indexOf(tab);
+      let next = null;
+      if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+      if (event.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+      if (event.key === "Home") next = 0;
+      if (event.key === "End") next = tabs.length - 1;
+      if (next === null) return;
       event.preventDefault();
-      dropzone.classList.add("over");
-    })
-  );
-  ["dragleave", "drop"].forEach((name) =>
-    dropzone.addEventListener(name, (event) => {
-      event.preventDefault();
-      dropzone.classList.remove("over");
-    })
-  );
-  dropzone.addEventListener("drop", (event) => importFile(event.dataTransfer.files[0]));
+      tabs[next].focus();
+      setView(tabs[next].dataset.view);
+    });
+  });
 
-  $("#composer").onsubmit = (event) => {
+  $$(".panel-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const panel = button.closest(".panel");
+      if (!panel) return;
+      const collapsed = panel.classList.toggle("collapsed");
+      const title = ($("h2", panel) && $("h2", panel).textContent.trim()) || "面板";
+      button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      button.setAttribute("aria-label", `${collapsed ? "展开" : "收起"}${title}`);
+    });
+  });
+
+  $("#ask-form").addEventListener("submit", (event) => {
     event.preventDefault();
-    const value = $("#question").value;
-    $("#question").value = "";
-    $("#question").style.height = "auto";
-    ask(value);
-  };
+    ask($("#question").value);
+  });
   $("#question").addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      $("#composer").requestSubmit();
+      $("#ask-form").requestSubmit();
     }
   });
-  $("#question").addEventListener("input", (event) => {
-    const el = event.target;
-    el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 160) + "px";
+  $("#question").addEventListener("input", (event) => autoGrow(event.target));
+
+  $("#messages").addEventListener("click", (event) => {
+    const cite = event.target.closest(".cite");
+    if (cite) {
+      highlightEvidence(Number(cite.dataset.n));
+    }
   });
 
-  document.addEventListener("click", (event) => {
-    const askButton = event.target.closest("[data-ask]");
-    if (askButton) {
-      switchView("ask");
-      ask(askButton.dataset.ask);
-    }
+  $("#memory-btn").addEventListener("click", openMemory);
+  $("#memory-close").addEventListener("click", closeMemory);
+  $("#memory-cancel").addEventListener("click", closeMemory);
+  $("#memory-form").addEventListener("submit", saveMemory);
+  $("#memory-modal").addEventListener("click", (event) => {
+    if (event.target === $("#memory-modal")) closeMemory();
   });
-  $("#refresh-eval").onclick = loadEval;
+
+  const input = $("#import-input");
+  $("#import-btn").addEventListener("click", () => input.click());
+  $("#import-btn-2").addEventListener("click", () => input.click());
+  input.addEventListener("change", () => importFile(input.files && input.files[0]));
+
+  $("#eval-refresh").addEventListener("click", loadEval);
 
   document.addEventListener("keydown", (event) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-      event.preventDefault();
-      switchView("ask");
-      $("#question").focus();
-    }
-    if (event.key === "Escape") {
-      $$("dialog[open]").forEach((dialog) => dialog.close());
+    if (event.key === "Escape" && !$("#memory-modal").classList.contains("hidden")) {
+      closeMemory();
     }
   });
 }
 
-async function health() {
-  try {
-    const data = await fetch("/api/health").then((r) => r.json());
-    $("#conn-db").classList.toggle("ok", data.db === "ok");
-    $("#conn-db").classList.toggle("bad", data.db !== "ok");
-    $("#conn-memory").classList.toggle("ok", data.memory === "ok");
-    $("#conn-memory").classList.toggle("bad", data.memory !== "ok");
-  } catch {
-    $("#conn-db").classList.add("bad");
-  }
+async function init() {
+  bind();
+  await Promise.all([refreshHealth(), loadBootstrap()]);
+  setView("ask");
 }
 
-(async function init() {
-  bind();
-  try {
-    await loadBootstrap();
-  } catch (error) {
-    toast("无法连接后端：" + error.message, 5000);
-  }
-  health();
-  setInterval(health, 30000);
-})();
+init();

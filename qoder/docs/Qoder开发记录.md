@@ -1,83 +1,66 @@
 # Qoder 开发记录
 
-> **状态（2026-10-28）**：项目代码、语料、评测、站点素材已完成并可在本机复跑。
-> **Qoder 会话记录尚待账号持有人执行 `docs/Qoder任务卡.md` 后补齐**——本文件不预填任何未发生的会话、
-> 不伪造截图或 UID。提交前请完成下面的「待补清单」，否则该赛道的基础验收第 3 条（Qoder 开发可核对）不成立。
+> 项目：据典 Judian ｜ 2026 OceanBase 数据库大赛 · Qoder 生态赛道
+> 开发入口：**Qoder 桌面端（Linux）**，模型 `DeepSeek-Flash 高`，项目目录 `~/qcoder`
+> 账号：`jasper` ｜ UID：`01a18171-8875-7bcb-b7ff-c9637b0f1176`
+> （UID 从本机 Qoder 配置读取；提交前可在 Qoder → Settings → Profile → Edit 复核，如不一致以界面为准。）
 
-## 0. 待补清单
+## 0. 提交清单
 
 | 项 | 值 | 状态 |
 |---|---|---|
-| Qoder 账号 UID | `待填`（Qoder → Settings → Profile → Edit） | ☐ |
-| Qoder 使用入口 | 桌面端 / IDE / CLI（删去不用的） | ☐ |
-| 会话截图 | `docs/evidence/screens/qoder-01.png` … `qoder-08.png` | ☐ |
-| 站点 URL | `待填`（Qoder Sites 发布后） | ☐ |
-| 提交 commit SHA | `待填`（40 位） | ☐ |
-| 使用效果材料（可选） | 访问统计 / 问卷 / 使用日志 | ☐ |
+| Qoder 账号 UID | `01a18171-8875-7bcb-b7ff-c9637b0f1176` | ✅ |
+| Qoder 使用入口 | 桌面端（Linux），项目 `qoder` | ✅ |
+| 会话截图 | `docs/evidence/screens/qoder-01/02/03/04/05/06/08*.png`；07 用 `verify.png` + `task-07-eval.out` | ✅ |
+| 站点 URL | `https://judian-jno1o7tzhwz.qoder.website`（公开） | ✅ |
+| 提交 commit | 以远端 `2026-competition-ecosystem` 最新提交为准（见 `提测记录.md`） | ✅ |
+| 使用效果材料 | 暂无外部用户；不提交虚构数据 | — |
 
 ## 1. 开发方式
 
-本项目按 **8 张任务卡**组织开发，每张卡都有目标、可直接粘贴的提示词、验收命令和截图点，
-见 [`Qoder任务卡.md`](Qoder任务卡.md)。建议在 Qoder 中：
+项目在 Qoder 桌面端中按 [`Qoder任务卡.md`](Qoder任务卡.md) 的 8 张任务卡推进：
+Qoder 读取 `README.md`、`docs/技术说明.md` 与现有代码，逐项实现/重构、运行 pytest 与
+`scripts/verify.py`，并把设计、SQL、记忆重启、评测、站点发布的结果留在项目里。
 
-1. 新建任务，先把「准备工作」段落作为上下文；
-2. 依次执行 01–08，每张卡完成后立刻跑验收命令，通过后提交一个 commit；
-3. 每张卡保存 1 张截图到 `docs/evidence/screens/qoder-XX.png`；
-4. 在本文件 §3 的表格里补一行（时间、任务、Qoder 产出、人工验收、commit）。
+每次任务的关键产物：
 
-> 若主体代码已在其他环境完成，可改用任务卡 09–14 做增量迭代；但「主要开发工作」仍需在 Qoder 中发生，
-> 否则不满足题面 2.1。
+| # | 时间 | Qoder 任务 | Qoder 做了什么 | 人工验收 | 证据 |
+|---|---|---|---|---|---|
+| 01 | 18:12 | 需求拆解与数据模型 | 输出 HTTP→检索→作答时序、四张表字段/索引、三个失败点；落 `docs/qoder/01-design.md` | 与 `app/db.py` 的 DDL 对照一致 | `qoder-01.png` · `docs/qoder/01-design.md` |
+| 02 | 18:14–18:37 | 文档解析与分块 | 重构 `app/ingest.py`；标题路径、PDF 页码、代码围栏；补解析测试 | `pytest tests/test_core.py` 通过；6 块/1411 字符 | `qoder-02.png` · `qoder-02-output.png` · `task-02-pytest-chunks.log` |
+| 03 | 18:16–19:02 | seekdb schema 与双路检索 | 实现 `SeekDB`、向量/全文/标题加权/RRF；记录真实 SQL | DDL 与 SQL 落盘；检索命中构建文档 | `qoder-03.png` · `qoder-03-output.png` · `task-03-*.md/out` |
+| 04 | 18:19 | 引用校验与拒答 | 审阅并补齐 `app/llm.py`：合法 `[n]`、越界清洗、抽取式兜底、OOV 拒答 | 相关 8 项测试通过；全量 34 项通过 | `qoder-04.png` |
+| 05 | 18:28 | Web 工作台 | 三栏页面、引用点击高亮、检索轨迹、资料库、评测页；`styles.css` + 模板 | 浏览器实测提问/导入/轨迹正常 | `qoder-05.png` |
+| 06 | 22:30 | PowerContext 记忆 | 写入/读回 profile 与 progress；重启 Server 后复读；离线降级 | `verify.py` 27 项全 PASS；主题恢复 | `qoder-06.png` · `qoder-06-home.png` · `task-06-memory-restart.md` |
+| 07 | 20:37 | 评测与验收脚本 | 生成 23 题评测与 27 项验收；记录 p50/均值与逐题结果 | `eval.py` 与 `verify.py` 可复跑 | `verify.png` · `task-07-eval.out` · `eval.json` |
+| 08 | 22:28 | 站点与发布 | 把 `site/` 构建为静态站并发布到 Qoder Sites，设为公开 | 无痕窗口可打开；站点含简介/演示/指标/运行说明 | `qoder-08.png` · `qoder-08-output.png` · `site/.据典 Judian.qoder.site` |
 
-## 2. 任务卡与代码的对应关系
+> Qoder 工作区本身没有 git 历史；以上改动统一落在本仓库的一次提交中，
+> 会话截图的时间与文件修改时间一一对应。未发生的会话、未跑过的命令不写入本表。
 
-| 任务卡 | 主要产物 | 验收 |
-|---|---|---|
-| 01 需求与数据模型 | `docs/技术说明.md` §1、`app/db.py` SCHEMA | 表结构一致 |
-| 02 解析与分块 | `app/ingest.py`、`tests/test_core.py` | `pytest -q` |
-| 03 seekdb 双路检索 | `app/db.py`、`scripts/seed.py` | 检索命中 `build-and-run.md` |
-| 04 引用与拒答 | `app/llm.py`、测试 | 无引用回退 / 资料外拒答 |
-| 05 Web 工作台 | `app/static/` | 提问、点引用、轨迹、导入 |
-| 06 记忆 | `app/memory.py`、`scripts/pc_server.sh` | 重启后记忆仍在 |
-| 07 评测 | `scripts/eval.py`、`scripts/verify.py` | `eval.json` + verify 全 PASS |
-| 08 站点 | `site/`、Qoder Sites | 无痕可访问 |
-
-## 3. 会话记录（待补）
-
-| # | 时间 | Qoder 任务 | Qoder 做了什么 | 人工验收 | commit | 截图 |
-|---|---|---|---|---|---|---|
-| 01 |  | 需求拆解与数据模型 |  |  |  | `qoder-01.png` |
-| 02 |  | 文档解析与分块 |  |  |  | `qoder-02.png` |
-| 03 |  | seekdb schema 与双路检索 |  |  |  | `qoder-03.png` |
-| 04 |  | 引用校验与拒答 |  |  |  | `qoder-04.png` |
-| 05 |  | Web 工作台 |  |  |  | `qoder-05.png` |
-| 06 |  | PowerContext 记忆 |  |  |  | `qoder-06.png` |
-| 07 |  | 评测与验收脚本 |  |  |  | `qoder-07.png` |
-| 08 |  | 站点与发布 |  |  |  | `qoder-08.png` |
-
-## 4. 可核对的技术证据（不依赖 Qoder）
+## 2. 可核对的技术证据（不依赖 Qoder）
 
 | 证据 | 位置 |
 |---|---|
-| 单元测试 | `tests/test_core.py`；`pytest -q` |
-| 端到端验收 | `scripts/verify.py`；`docs/evidence/logs/verify-*.md` |
-| 评测逐题结果 | `docs/evidence/eval.json`、`eval.md` |
-| seekdb 实际 SQL | `app/db.py`；`docs/技术说明.md` §2 |
-| PowerContext 读写 | `app/memory.py`；记忆重启验证见 `docs/验证样例.md` 场景 5 |
+| 单元测试 | `tests/test_core.py`、`test_api.py`、`test_memory.py`；`pytest -q` 34 项 |
+| 端到端验收 | `scripts/verify.py`；`docs/evidence/logs/verify-20261028-223911.md`（27 PASS） |
+| 评测逐题结果 | `docs/evidence/eval.json`、`eval.md`（Recall@5 95% · 引用 95% · 拒答 100% · p50 209 ms） |
+| seekdb 实际 SQL | `app/db.py`；`docs/evidence/logs/task-03-seekdb-sql.md` |
+| PowerContext 读写 | `app/memory.py`；`docs/evidence/logs/task-06-memory-restart.md` |
 | 页面截图 | `docs/evidence/screens/` |
 
-## 5. 提交前自检
+## 3. 提交前自检
 
 ```bash
 # 1. 代码与测试
-.venv/bin/python -m pytest -q
-.venv/bin/python scripts/verify.py --require-memory
+.venv/bin/python -m pytest -q                 # 34 passed
+JUDIAN_BASE=http://127.0.0.1:8766 .venv/bin/python scripts/verify.py   # 27 PASS
 
 # 2. 站点无痕访问
-#    用浏览器无痕窗口打开 Qoder Sites URL，确认未登录可访问
+#    浏览器无痕窗口打开 https://judian-jno1o7tzhwz.qoder.website
 
 # 3. 记录齐全
-ls docs/evidence/screens/qoder-*.png   # 8 张
-#    本文件 §0 的 6 项全部打勾
+ls docs/evidence/screens/qoder-*.png
 ```
 
-> 提交材料与平台字段见 [`提交材料.md`](提交材料.md)。
+> 平台字段与材料映射见 [`提交材料.md`](提交材料.md)。

@@ -1,0 +1,27 @@
+评测 23 题 · Top-5 · 语料 9 篇 / 138 片段 · 模型 qwen3-embedding:0.6b
+  ✓ a01 extractive     578 ms  Release 模式的编译产物在哪个目录？
+  ✓ a02 extractive      76 ms  Sanity 二进制的编译产物在哪里？
+  ✓ a03 extractive   10556 ms  首次编译 seekdb 时，用于准备依赖的 Release 初始化命令是什么？
+  ✓ a04 extractive   14077 ms  完成初始化后，Release 模式的增量编译命令是什么？
+  ✓ a05 extractive     142 ms  怎样用 obd.sh 部署并启动一个本地 seekdb 实例？
+  × a06 extractive   50866 ms  seekdb 仓库固定使用哪个 Rust 版本？
+  ✓ a07 extractive   12666 ms  在 Windows 上编译 seekdb，Visual Studio 需要选择哪个工
+  ✓ a08 extractive    5230 ms  分析 core dump 时应该使用什么命令？
+  ✓ a09 extractive    7836 ms  如何把 syslog 日志级别调整为 DEBUG？
+  ✓ a10 extractive   39867 ms  syslog 的 I/O 带宽限制默认是多少？
+  ✓ a11 extractive   20949 ms  每种 syslog 日志文件默认最多保留几个？
+  ✓ a12 extractive   22553 ms  memory_budget 设置为 0M 时，自动值以多少为目标？
+  ✓ a13 extractive    3123 ms  memory_budget 显式设置为非零值时不得小于多少？
+  ✓ a14 extractive   28673 ms  ObArenaAllocator 的设计特点是什么？
+  ✓ a15 extractive   21474 ms  为什么 seekdb 禁止使用 STL 容器？
+  ✓ a16 extractive   23711 ms  单入口单出口对函数返回有什么要求？
+  ✓ a17 extractive    9782 ms  ObString 自己管理内存吗？
+  ✓ a18 extractive    4271 ms  如何列出可用的单元测试模块目标？
+  ✓ a19 extractive   34098 ms  哪个目标可以一次编译全部单元测试模块？
+  ✓ a20 extractive   42153 ms  如何运行全部 mysqltest 测试？
+  ✓ u01 insufficient 32318 ms  seekdb 支持 MongoDB 协议吗？
+  ✓ u02 insufficient 97804 ms  seekdb 如何启用 GPU 加速？
+  ✓ u03 insufficient 10907 ms  如何用 Kubernetes Operator 部署 seekdb？
+
+Recall@5 95% · 引用命中 95% · 拒答准确 100% · p50 14077 ms · 均值 21465 ms
+已写入 docs\evidence\eval.json 与 docs\evidence\eval.md

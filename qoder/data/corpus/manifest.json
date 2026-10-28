@@ -1,11 +1,11 @@
 {
   "build-and-run.md": "获取代码、编译并运行 seekdb",
-  "coding-convention.md": "C++ 命名与函数约定",
-  "container.md": "seekdb C++ 容器库",
-  "debug.md": "调试 seekdb",
-  "logging.md": "系统日志介绍",
-  "memory.md": "内存管理与内存预算",
-  "mysqltest.md": "使用 obd.sh 运行 mysqltest",
   "toolchain.md": "安装工具链",
-  "unittest.md": "编写与运行单元测试"
+  "container.md": "基础数据结构",
+  "debug.md": "调试 seekdb",
+  "memory.md": "内存管理",
+  "logging.md": "OceanBase seekdb 系统日志介绍",
+  "unittest.md": "编写与运行单元测试",
+  "mysqltest.md": "运行 mysqltest",
+  "coding-convention.md": "编程惯例"
 }

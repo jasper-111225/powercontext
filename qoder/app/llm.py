@@ -1,335 +1,566 @@
-"""回答生成：严格基于检索到的材料，输出可核验的 [n] 引用。
-
-小模型（qwen2.5:0.5b）在严格格式上并不可靠，所以这里有两道保险：
-  1. 提示词要求「只依据材料」并给出编号；
-  2. 后处理校验引用；一旦模型没给出合法引用，就退化为**抽取式回答**——
-     直接从原文挑句子并标注来源。这样任何环境下都不会出现「无出处的答案」。
-"""
-
 from __future__ import annotations
 
 import re
-import time
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Callable, Sequence
 
 import httpx
 
-from .config import settings
+from .config import Settings, openai_url
 
-REFUSAL = "资料中没有找到足够依据来回答这个问题。换一种问法，或把这个主题的资料导入资料库后再试。"
-_SENTENCE = re.compile(r"(?<=[。！？!?；;])")
+INSUFFICIENT_ANSWER = (
+    "资料中没有找到足够依据来回答这个问题。换一种问法，或把这个主题的资料导入资料库后再试。"
+)
+NO_ANSWER_MARKER = "资料中没有找到足够依据"
 _CITATION = re.compile(r"\[(\d{1,2})\]")
-_LATIN = re.compile(r"[A-Za-z][A-Za-z0-9_.+-]{2,}")
-_GENERIC = {"seekdb", "oceanbase", "sql", "api", "http", "https", "json"}
-_STOP = {
-    "的", "了", "是", "在", "和", "与", "及", "或", "有", "吗", "呢", "怎么", "如何",
-    "什么", "哪些", "为什么", "可以", "需要", "一个", "这个", "那个", "seekdb",
+_CJK_RUN = re.compile(r"[\u3400-\u9fff]+")
+_WORD = re.compile(r"[a-z0-9][a-z0-9_\-.]*")
+_ENTITY = re.compile(r"[A-Za-z][A-Za-z0-9_+\-.]*")
+_STOP_GRAMS = {
+    "什么", "怎么", "怎样", "如何", "为何", "为什么", "哪些", "哪个", "哪里",
+    "多少", "多久", "是否", "可以", "请问", "一下", "告诉", "介绍", "以及",
+    "这个", "那个", "我们", "你们", "他们", "它们", "的话", "一个", "有没有",
+    "需要", "应该", "能够", "进行", "关于", "相关",
+}
+_STOP_WORDS = {
+    "a", "an", "the", "is", "are", "was", "were", "be", "been", "to", "of",
+    "and", "or", "in", "on", "at", "for", "with", "how", "what", "why",
+    "which", "who", "when", "where", "does", "do", "did", "can", "could",
+    "should", "would", "i", "you", "it", "this", "that", "there", "from",
 }
 
 
-def _terms(text: str) -> set[str]:
-    text = text.lower()
-    terms: set[str] = set(re.findall(r"[a-z0-9_./-]{2,}", text))
-    cjk = re.findall(r"[\u4e00-\u9fff]+", text)
-    for run in cjk:
+def lexical_terms(text: str) -> set[str]:
+    lowered = text.lower()
+    terms: set[str] = set()
+    for run in _CJK_RUN.findall(lowered):
         if len(run) == 1:
-            continue
-        for i in range(len(run) - 1):
-            bigram = run[i : i + 2]
-            if bigram not in _STOP:
-                terms.add(bigram)
-        if len(run) <= 6:
             terms.add(run)
-    return {t for t in terms if t not in _STOP}
-
-
-def _overlap(query_terms: set[str], text: str) -> float:
-    if not query_terms:
-        return 0.0
-    low = text.lower()
-    hits = sum(1 for term in query_terms if term in low)
-    return hits / len(query_terms)
-
-
-def _clean_sentence(sentence: str) -> str:
-    sentence = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", sentence)
-    sentence = re.sub(r"[`*]{1,3}", "", sentence)
-    sentence = sentence.strip(" \t\r\n->#|")
-    sentence = re.sub(r"\s+", " ", sentence)
-    return sentence
-
-
-def _sentences(text: str) -> list[str]:
-    """把块拆成候选句子；代码块并进相邻的「……：」说明，列表项去掉符号。"""
-    parts = re.split(r"```[^\n]*\n(.*?)```", text, flags=re.S)
-    out: list[str] = []
-    for index, part in enumerate(parts):
-        if index % 2 == 1:  # 代码块
-            code = " ".join(line.strip() for line in part.splitlines() if line.strip())
-            if not code:
-                continue
-            if out and out[-1].rstrip().endswith(("：", ":")):
-                out[-1] = out[-1].rstrip() + " " + code
-            else:
-                out.append(code)
             continue
-        for block in re.split(r"\n{2,}", part):
-            block = block.strip()
-            if not block or block.startswith("|") or set(block) <= set("-|: "):
+        for index in range(len(run) - 1):
+            gram = run[index : index + 2]
+            if gram not in _STOP_GRAMS:
+                terms.add(gram)
+    for word in _WORD.findall(lowered):
+        if len(word) >= 2 and word not in _STOP_WORDS:
+            terms.add(word)
+    return terms
+
+
+def lexical_coverage(query: str, texts: Sequence[str]) -> float:
+    terms = lexical_terms(query)
+    if not terms:
+        return 0.0
+    haystack = "\n".join(texts).lower()
+    hits = sum(1 for term in terms if term in haystack)
+    return hits / len(terms)
+
+
+def entity_tokens(query: str) -> list[str]:
+    tokens: list[str] = []
+    for match in _ENTITY.finditer(query):
+        token = match.group(0).lower().strip(".-")
+        if len(token) < 2 or token in _STOP_WORDS:
+            continue
+        if token.isdigit():
+            continue
+        if token not in tokens:
+            tokens.append(token)
+    return tokens
+
+
+def confidence_of(top_vec_sim: float | None, coverage: float) -> float:
+    return min(1.0, max(0.0, top_vec_sim or 0.0) * 0.75 + coverage * 0.45)
+
+
+class LLMError(RuntimeError):
+    pass
+
+
+class LLMClient:
+    def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
+        self.settings = settings
+        self.model = settings.llm_model
+        self._client = client
+
+    def _post(self, system: str, user: str, max_tokens: int = 600) -> str:
+        url = openai_url(self.settings.llm_base, "chat/completions")
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": 0.0,
+            "max_tokens": max_tokens,
+            "stream": False,
+        }
+        try:
+            if self._client is not None:
+                response = self._client.post(url, json=payload)
+            else:
+                with httpx.Client(timeout=self.settings.llm_timeout) as client:
+                    response = client.post(url, json=payload)
+            response.raise_for_status()
+            body = response.json()
+            content = body["choices"][0]["message"]["content"]
+            if not isinstance(content, str) or not content.strip():
+                raise LLMError("生成模型返回空内容")
+            return content.strip()
+        except LLMError:
+            raise
+        except Exception as exc:
+            raise LLMError(
+                f"调用生成模型失败（{self.model} @ {self.settings.llm_base}）: {exc}"
+            ) from exc
+
+    def generate(self, system: str, user: str) -> str:
+        return self._post(system, user)
+
+    def available(self) -> tuple[bool, str]:
+        base = self.settings.llm_base.rstrip("/")
+        if base.endswith("/v1"):
+            base = base[:-3]
+        for url in (f"{base}/api/tags", openai_url(self.settings.llm_base, "models")):
+            try:
+                if self._client is not None:
+                    response = self._client.get(url, timeout=2.0)
+                else:
+                    response = httpx.get(url, timeout=2.0)
+                if response.status_code >= 400:
+                    continue
+                if url.endswith("/api/tags"):
+                    models = response.json().get("models", [])
+                    names = {str(item.get("name", "")) for item in models if isinstance(item, dict)}
+                    if any(name == self.model or name.startswith(self.model + ":") for name in names):
+                        return True, f"已安装 {self.model}"
+                    return False, f"Ollama 可达，但未找到模型 {self.model}"
+                return True, "Ollama 可达"
+            except Exception:
                 continue
-            for sentence in _SENTENCE.split(block):
-                cleaned = _clean_sentence(sentence)
-                if cleaned:
-                    out.append(cleaned)
-    return [item for item in out if len(item) >= 12 or item.rstrip().endswith(("：", ":"))]
+        return False, "生成模型不可用，将使用原文摘录"
+
+
+def _system_prompt() -> str:
+    return (
+        "你是「据典」，一个只依据本地资料作答的证据助手。必须遵守：\n"
+        "1. 只能使用 <evidence> 中提供的材料，不得使用外部知识，不得编造。\n"
+        "2. 每个事实性句子后面必须标注来源编号，如 [1]、[2]；编号只能来自材料编号。\n"
+        "3. 如果材料不足以回答，只输出这一句，不要补充：\n"
+        f"{INSUFFICIENT_ANSWER}\n"
+        "4. 不要引用材料以外的内容，不要把用户偏好当成事实依据。\n"
+        "5. 使用简体中文；引用原文时不要改动数字、命令、路径和专有名词。"
+    )
+
+
+def _format_evidence(evidence: Sequence[dict[str, Any]]) -> str:
+    blocks: list[str] = []
+    for index, row in enumerate(evidence, start=1):
+        meta = f"《{row.get('doc_title', '')}》"
+        if row.get("heading"):
+            meta += f" › {row['heading']}"
+        if row.get("page"):
+            meta += f"（第 {row['page']} 页）"
+        blocks.append(f"[{index}] {meta}\n{row.get('text', '')}")
+    return "\n\n".join(blocks)
+
+
+def build_prompt(
+    question: str,
+    evidence: Sequence[dict[str, Any]],
+    profile: dict[str, Any] | None = None,
+    style: str = "concise",
+) -> tuple[str, str]:
+    user_parts: list[str] = []
+    if profile:
+        fields = []
+        if profile.get("topic"):
+            fields.append(f"研究主题：{profile['topic']}")
+        if profile.get("goal"):
+            fields.append(f"本周目标：{profile['goal']}")
+        if profile.get("style"):
+            fields.append(f"偏好：{profile['style']}")
+        if fields:
+            user_parts.append("<user_profile>\n" + "\n".join(fields) + "\n</user_profile>")
+    user_parts.append("<evidence>\n" + _format_evidence(evidence) + "\n</evidence>")
+    instruction = "请依据材料回答，并逐句标注引用编号。"
+    if style == "detailed":
+        instruction += "在不超出材料的前提下，给出稍详细的解释。"
+    else:
+        instruction += "回答保持简洁，通常不超过 4 句。"
+    user_parts.append(f"问题：{question}\n{instruction}")
+    return _system_prompt(), "\n\n".join(user_parts)
+
+
+def _rows_for_trace(rows: Sequence[dict[str, Any]], limit: int = 10) -> list[dict[str, Any]]:
+    trace: list[dict[str, Any]] = []
+    for rank, row in enumerate(rows[:limit], start=1):
+        trace.append(
+            {
+                "rank": rank,
+                "chunk_id": int(row["id"]),
+                "doc_title": row.get("doc_title", ""),
+                "heading": row.get("heading", ""),
+                "page": row.get("page"),
+                "vec_sim": row.get("vec_sim"),
+                "ft_score": row.get("ft_score"),
+                "rrf": row.get("rrf"),
+                "snippet": str(row.get("text", ""))[:120],
+            }
+        )
+    return trace
+
+
+def _citation(row: dict[str, Any], n: int, used: bool) -> dict[str, Any]:
+    return {
+        "n": n,
+        "chunk_id": int(row["id"]),
+        "doc_id": int(row["doc_id"]),
+        "doc_title": row.get("doc_title", ""),
+        "source": row.get("source", ""),
+        "heading": row.get("heading", ""),
+        "page": row.get("page"),
+        "text": row.get("text", ""),
+        "vec_rank": row.get("vec_rank"),
+        "ft_rank": row.get("ft_rank"),
+        "vec_sim": row.get("vec_sim"),
+        "ft_score": row.get("ft_score"),
+        "rrf": row.get("rrf"),
+        "used": used,
+    }
+
+
+def parse_citations(text: str, max_n: int) -> tuple[list[int], list[int]]:
+    valid: list[int] = []
+    invalid: list[int] = []
+    for match in _CITATION.finditer(text):
+        number = int(match.group(1))
+        if 1 <= number <= max_n:
+            if number not in valid:
+                valid.append(number)
+        elif number not in invalid:
+            invalid.append(number)
+    return valid, invalid
+
+
+def _clean_citations(text: str, max_n: int) -> str:
+    def replace(match: re.Match[str]) -> str:
+        number = int(match.group(1))
+        return match.group(0) if 1 <= number <= max_n else ""
+
+    cleaned = _CITATION.sub(replace, text)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    return cleaned.strip()
+
+
+def _sentence_units(text: str) -> list[str]:
+    """Split a chunk into sentence-like units, folding code fences into a
+    preceding line ending with a colon so command/path evidence stays usable."""
+    lines = str(text).replace("\r\n", "\n").split("\n")
+    units: list[str] = []
+    buffer: list[str] = []
+    fence: list[str] = []
+    in_fence = False
+    marker = ""
+
+    def flush_prose() -> None:
+        block = "\n".join(buffer).strip()
+        buffer.clear()
+        if not block:
+            return
+        for match in re.finditer(r"[^。！？!?；;\n]+[。！？!?；;]?", block):
+            sentence = match.group(0).strip()
+            if sentence:
+                units.append(sentence)
+
+    def flush_fence() -> None:
+        block = [
+            line.strip()
+            for line in fence
+            if line.strip() and not line.lstrip().startswith(("```", "~~~"))
+        ]
+        fence.clear()
+        if not block:
+            return
+        code = block[0]
+        if units and units[-1].rstrip().endswith(("：", ":")):
+            units[-1] = f"{units[-1].rstrip()} {code}"
+        # Code without an explanatory lead-in is not quoted as prose.
+
+    for line in lines:
+        stripped = line.lstrip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            current = stripped[:3]
+            if not in_fence:
+                flush_prose()
+                in_fence = True
+                marker = current
+                fence.append(line)
+            else:
+                fence.append(line)
+                if current == marker:
+                    in_fence = False
+                    marker = ""
+                    flush_fence()
+            continue
+        if in_fence:
+            fence.append(line)
+        elif line.strip():
+            buffer.append(line)
+        else:
+            flush_prose()
+    flush_prose()
+    if fence:
+        flush_fence()
+    return [unit for unit in units if len(unit) >= 4]
+
+
+def _trigrams(text: str) -> set[str]:
+    compact = re.sub(r"\s+", "", text.lower())
+    return {compact[index : index + 3] for index in range(max(0, len(compact) - 2))}
+
+
+def _similar(a: str, b: str) -> bool:
+    left, right = _trigrams(a), _trigrams(b)
+    if not left or not right:
+        return a == b
+    return len(left & right) / len(left | right) > 0.5
 
 
 def _intent_bonus(question: str, sentence: str) -> float:
-    """按问句类型给句式加权：问位置就看路径，问步骤就看命令。"""
     bonus = 0.0
-    if re.search(r"哪里|在哪|位置|路径|目录|地址|哪个文件", question):
-        if re.search(r"/|\b[a-z_]+\.[a-z]+\b|build_|tools/", sentence):
-            bonus += 1.4
-    if re.search(r"怎么|如何|步骤|怎样", question):
-        if re.search(r"执行|运行|使用|通过|命令|安装|配置|添加", sentence):
-            bonus += 0.8
-    if re.search(r"为什么|原因|区别|对比", question):
-        if re.search(r"因为|由于|原因|区别|相比|而", sentence):
-            bonus += 0.8
+    lowered = sentence.lower()
+    if re.search(r"(在哪|哪个目录|什么目录|路径|位于|output)", question):
+        if re.search(r"(/|\\|build|\.so|\.a|目录)", lowered):
+            bonus += 0.30
+    if re.search(r"(怎么|如何|怎样|命令|步骤)", question):
+        if re.search(r"(\./|make|gdb|build\.sh|obd\.sh|命令|执行|使用)", lowered):
+            bonus += 0.18
+    if re.search(r"(多少|多久|几个|比例|百分比|大小|上限|下限)", question):
+        if re.search(r"\d", sentence):
+            bonus += 0.30
+    if re.search(r"(为什么|原因|为何)", question):
+        if re.search(r"(因为|由于|原因|避免|防止)", sentence):
+            bonus += 0.22
+    if re.search(r"(什么时候|何时|何时会)", question):
+        if re.search(r"(当|时|之后|之前|首次|结束)", sentence):
+            bonus += 0.15
     return bonus
 
 
-def _similar(a: str, b: str) -> float:
-    """3-gram Jaccard，用于去掉重叠切块带来的近似重复句。"""
-    def grams(value: str) -> set[str]:
-        value = re.sub(r"\s+", "", value)
-        return {value[i : i + 3] for i in range(max(0, len(value) - 2))}
+def _extractive(
+    question: str,
+    evidence: Sequence[dict[str, Any]],
+    reason: str,
+) -> dict[str, Any]:
+    candidates: list[tuple[float, int, str, dict[str, Any]]] = []
+    for index, row in enumerate(evidence):
+        units = _sentence_units(row.get("text", ""))
+        for sentence in units:
+            coverage = lexical_coverage(question, [sentence])
+            vector = float(row.get("vec_sim") or 0.0)
+            rank_bonus = 0.08 * (1.0 - index / max(1, len(evidence)))
+            bonus = _intent_bonus(question, sentence)
+            score = coverage * coverage + max(0.0, vector) * 0.25 + rank_bonus + bonus
+            if coverage > 0 or bonus > 0 or index == 0:
+                candidates.append((score, index, sentence, row))
 
-    A, B = grams(a), grams(b)
-    if not A or not B:
-        return 0.0
-    return len(A & B) / len(A | B)
+    candidates.sort(key=lambda item: (-item[0], item[1]))
+    selected: list[tuple[int, str, dict[str, Any]]] = []
+    for _, index, sentence, row in candidates:
+        if any(_similar(sentence, existing[1]) for existing in selected):
+            continue
+        selected.append((index, sentence, row))
+        if len(selected) >= 3:
+            break
 
+    if not selected:
+        row = evidence[0]
+        quote_lines = [line for line in str(row.get("text", "")).split("\n") if line.strip()]
+        quote = "\n".join(quote_lines[:4]).strip()
+        selected = [(0, quote, row)]
 
-def _unknown_entities(
-    question: str, chunks: list[dict[str, Any]], corpus_text: str | None = None
-) -> list[str]:
-    """问句里出现了资料里完全没有的英文实体（mongodb / gpu / k8s…），直接判无依据。
+    used_numbers: list[int] = []
+    bullets: list[str] = []
+    for index, sentence, row in selected:
+        number = index + 1
+        if number not in used_numbers:
+            used_numbers.append(number)
+        bullets.append(f"- {sentence.rstrip()} [{number}]")
 
-    中文问句里混英文专有名词很常见；这类词一旦 OOV，往往意味着问题超出语料，
-    比「向量相似度低」更可靠。
-    """
-    latin = {token.lower() for token in _LATIN.findall(question)}
-    latin -= _GENERIC
-    if not latin:
-        return []
-    corpus = (corpus_text or " ".join(chunk.get("text", "") for chunk in chunks)).lower()
-    return sorted(token for token in latin if token not in corpus)
+    titles = {row.get("doc_title", "") for _, _, row in selected}
+    if len(titles) == 1 and next(iter(titles)):
+        header = f"根据《{next(iter(titles))}》的原文："
+    else:
+        header = "根据资料原文："
+    answer = header + "\n" + "\n".join(bullets)
 
-
-def _label(index: int, chunk: dict[str, Any]) -> str:
-    parts = [f"[{index}] 《{chunk.get('doc_title') or '资料'}》"]
-    if chunk.get("heading"):
-        parts.append(f"› {chunk['heading']}")
-    if chunk.get("page"):
-        parts.append(f"（第 {chunk['page']} 页）")
-    return " ".join(parts)
+    citations = [
+        _citation(evidence[number - 1], number, True)
+        for number in sorted(used_numbers)
+    ]
+    return {
+        "mode": "extractive",
+        "answer": answer,
+        "citations": citations,
+        "reason": reason,
+        "used_numbers": used_numbers,
+    }
 
 
 @dataclass
 class Answer:
-    text: str
-    mode: str  # llm | extractive | insufficient
-    reason: str = ""
-    citations: list[int] = field(default_factory=list)
+    mode: str
+    answer: str
+    citations: list[dict[str, Any]]
+    reason: str
+    confidence: float
+    evidence: list[dict[str, Any]]
+    trace: dict[str, Any]
+    llm_error: str | None = None
 
-
-class Answerer:
-    def __init__(self, s=settings) -> None:
-        self.s = s
-
-    # ------------------------------------------------------------------ llm
-    def _call_llm(self, prompt: str) -> str:
-        payload = {
-            "model": self.s.llm_model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "你是「据典」，一个只依据给定材料回答的中文研究助手。"
-                    "你不编造事实，每个结论后面都标注材料编号，例如 [1]。",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            "temperature": 0.1,
-            "max_tokens": self.s.llm_max_tokens,
-            "stream": False,
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "mode": self.mode,
+            "answer": self.answer,
+            "citations": self.citations,
+            "reason": self.reason,
+            "confidence": round(self.confidence, 4),
+            "evidence": self.evidence,
+            "trace": self.trace,
+            "llm_error": self.llm_error,
         }
-        with httpx.Client(timeout=self.s.llm_timeout) as client:
-            response = client.post(f"{self.s.llm_base}/chat/completions", json=payload)
-            response.raise_for_status()
-            data = response.json()
-        return (data["choices"][0]["message"]["content"] or "").strip()
 
-    def _prompt(self, question: str, chunks: list[dict[str, Any]], style: str) -> str:
-        blocks = []
-        for i, chunk in enumerate(chunks, start=1):
-            text = chunk["text"].strip()
-            if len(text) > 1100:
-                text = text[:1100] + "……"
-            blocks.append(f"{_label(i, chunk)}\n{text}")
-        length = "3 到 5 句" if style != "detailed" else "6 到 8 句，可以分点"
-        return (
-            "请只根据下面的材料回答问题。\n"
-            f"要求：用中文，{length}；每个事实句末尾标注来源编号，如 [1] 或 [1][2]；"
-            "不要引用材料之外的编号；如果材料不足以回答，只输出「资料中没有找到足够依据」。\n\n"
-            "材料：\n\n" + "\n\n".join(blocks) + f"\n\n问题：{question}\n\n回答："
-        )
 
-    # ------------------------------------------------------------ extractive
-    def _extractive(
-        self, question: str, chunks: list[dict[str, Any]], top_sim: float
-    ) -> Answer:
-        """从原文里挑句子。默认路径：不依赖生成模型，句句可核验。"""
-        terms = _terms(question)
-        top_doc = chunks[0].get("doc_id") if chunks else None
-        wants_location = bool(re.search(r"哪里|在哪|位置|路径|目录|地址|哪个文件", question))
-        candidates: list[dict[str, Any]] = []
-        for index, chunk in enumerate(chunks, start=1):
-            for position, sentence in enumerate(_sentences(chunk["text"])):
-                if len(sentence) < 8:
-                    continue
-                if len(sentence) > 240:
-                    sentence = sentence[:240] + "……"
-                coverage = _overlap(terms, sentence)
-                bonus = _intent_bonus(question, sentence)
-                score = coverage * coverage * 5.0
-                score += (chunk.get("vec_sim") or 0) * 0.8
-                score += 0.25 / (position + 1)
-                score += (chunk.get("rrf") or 0) * 1.5
-                score += bonus
-                heading_text = f"{chunk.get('doc_title', '')} {chunk.get('heading', '')}"
-                score += _overlap(terms, heading_text) * 2.0
-                if top_doc is not None and chunk.get("doc_id") == top_doc:
-                    score += 0.55
-                candidates.append(
-                    {
-                        "score": score,
-                        "index": index,
-                        "sentence": sentence,
-                        "coverage": coverage,
-                        "bonus": bonus,
-                        "path": bool(re.search(r"(/|build_(?:release|sanity)|src/|tools/)", sentence)),
-                    }
-                )
-        candidates.sort(key=lambda item: -item["score"])
-        if not candidates or top_sim < self.s.min_vector_similarity:
-            return Answer(REFUSAL, "insufficient")
+def answer_question(
+    question: str,
+    fused: Sequence[dict[str, Any]],
+    vector_rows: Sequence[dict[str, Any]],
+    fulltext_rows: Sequence[dict[str, Any]],
+    *,
+    settings: Settings,
+    llm: LLMClient,
+    corpus_contains: Callable[[str], bool] | None = None,
+    profile: dict[str, Any] | None = None,
+    style: str = "concise",
+) -> Answer:
+    evidence = [dict(row) for row in fused[: settings.evidence_top_n]]
+    trace = {
+        "vector": _rows_for_trace(vector_rows, 10),
+        "fulltext": _rows_for_trace(fulltext_rows, 10),
+        "rrf_k": settings.rrf_k,
+    }
 
-        # 有足够「词面/句式相关」的句子时，不让纯靠排名的句子混进来
-        good = [item for item in candidates if item["coverage"] > 0 or item["bonus"] > 0]
-        pool = good if len(good) >= 3 else candidates
-        if wants_location:
-            paths = [item for item in pool if item["path"]]
-            if paths:
-                pool = [paths[0]] + [item for item in pool if item is not paths[0]]
+    top_sims = [float(row["vec_sim"]) for row in evidence if row.get("vec_sim") is not None]
+    top_vec_sim = max(top_sims) if top_sims else None
+    top_texts = [str(row.get("text", "")) for row in evidence[:3]]
+    coverage = lexical_coverage(question, top_texts)
+    confidence = confidence_of(top_vec_sim, coverage)
 
-        picked: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        used_chunks: set[int] = set()
-        for item in pool:
-            sentence, index = item["sentence"], item["index"]
-            key = sentence[:32]
-            if key in seen:
-                continue
-            if index in used_chunks and len(picked) >= 2:
-                continue
-            if any(_similar(sentence, other["sentence"]) > 0.5 for other in picked):
-                continue
-            seen.add(key)
-            used_chunks.add(index)
-            picked.append(item)
-            if len(picked) >= 3:
+    missing: list[str] = []
+    if corpus_contains is not None:
+        for token in entity_tokens(question):
+            try:
+                if not corpus_contains(token):
+                    missing.append(token)
+            except Exception:
                 break
-        if not picked:
-            return Answer(REFUSAL, "insufficient")
 
-        docs = {
-            next((c.get("doc_title") or "" for i, c in enumerate(chunks, 1) if i == item["index"]), "")
-            for item in picked
-        }
-        if len(docs) == 1:
-            head = f"根据《{next(iter(docs))}》的原文："
-        else:
-            head = "根据资料原文："
-        lines = [head]
-        for item in picked:
-            lines.append(f"- {item['sentence']} [{item['index']}]")
+    if not evidence:
         return Answer(
-            "\n".join(lines),
-            "extractive",
-            reason="默认逐句摘录；勾选「详细」可让模型改写（改写仍会校验引用）",
-            citations=sorted({item["index"] for item in picked}),
+            mode="insufficient",
+            answer=INSUFFICIENT_ANSWER,
+            citations=[],
+            reason="资料库中没有检索到相关片段",
+            confidence=0.0,
+            evidence=[],
+            trace=trace,
         )
 
-    # ------------------------------------------------------------------ main
-    def answer(
-        self,
-        question: str,
-        chunks: list[dict[str, Any]],
-        *,
-        style: str = "concise",
-        corpus_text: str | None = None,
-    ) -> Answer:
-        if not chunks:
-            return Answer(REFUSAL, "insufficient", reason="没有召回到材料")
-        top_sim = max((chunk.get("vec_sim") or 0) for chunk in chunks)
-        terms = _terms(question)
-        lexical = max(_overlap(terms, chunk["text"]) for chunk in chunks)
-        unknown = _unknown_entities(question, chunks, corpus_text)
-        if unknown:
-            return Answer(
-                REFUSAL,
-                "insufficient",
-                reason=f"资料中没有出现：{', '.join(unknown)}（不做语料外推断）",
-            )
-        if top_sim < self.s.min_vector_similarity and lexical < 0.2:
-            return Answer(REFUSAL, "insufficient", reason=f"最高相似度 {top_sim:.3f}")
+    if missing:
+        return Answer(
+            mode="insufficient",
+            answer=INSUFFICIENT_ANSWER,
+            citations=[],
+            reason="资料中没有出现：" + "、".join(missing) + "（不做语料外推断）",
+            confidence=confidence,
+            evidence=[_citation(row, index, False) for index, row in enumerate(evidence, 1)],
+            trace=trace,
+        )
 
-        if style != "detailed":
-            return self._extractive(question, chunks, top_sim)
+    if (top_vec_sim or 0.0) < settings.min_vector_sim and coverage < settings.min_coverage:
+        return Answer(
+            mode="insufficient",
+            answer=INSUFFICIENT_ANSWER,
+            citations=[],
+            reason=(
+                f"证据不足：最高向量相似度 {0.0 if top_vec_sim is None else top_vec_sim:.2f}，"
+                f"词面覆盖 {coverage:.2f}"
+            ),
+            confidence=confidence,
+            evidence=[_citation(row, index, False) for index, row in enumerate(evidence, 1)],
+            trace=trace,
+        )
 
-        started = time.time()
+    llm_error: str | None = None
+    if settings.llm_enabled:
+        system, user = build_prompt(question, evidence, profile=profile, style=style)
         try:
-            raw = self._call_llm(self._prompt(question, chunks, style))
-        except Exception as exc:  # noqa: BLE001 - 模型不可用不是致命错误
-            fallback = self._extractive(question, chunks, top_sim)
-            fallback.reason = f"生成模型不可用（{type(exc).__name__}: {exc}），已改用原文摘录"
-            return fallback
+            raw = llm.generate(system, user)
+        except LLMError as exc:
+            raw = ""
+            llm_error = str(exc)
+        if raw:
+            head = raw[:40]
+            if NO_ANSWER_MARKER in head:
+                return Answer(
+                    mode="insufficient",
+                    answer=INSUFFICIENT_ANSWER,
+                    citations=[],
+                    reason="生成模型判断材料不足以回答",
+                    confidence=confidence,
+                    evidence=[_citation(row, index, False) for index, row in enumerate(evidence, 1)],
+                    trace=trace,
+                )
+            valid, _invalid = parse_citations(raw, len(evidence))
+            if not valid:
+                result = _extractive(
+                    question, evidence, "模型未给出合法引用，已回退为原文摘录"
+                )
+            else:
+                cleaned = _clean_citations(raw, len(evidence))
+                citations = [
+                    _citation(evidence[number - 1], number, True) for number in valid
+                ]
+                return Answer(
+                    mode="llm",
+                    answer=cleaned,
+                    citations=citations,
+                    reason="",
+                    confidence=confidence,
+                    evidence=[
+                        _citation(row, index, index in valid)
+                        for index, row in enumerate(evidence, 1)
+                    ],
+                    trace=trace,
+                    llm_error=None,
+                )
+        else:
+            result = _extractive(question, evidence, "生成模型不可用，已回退为原文摘录")
 
-        raw = raw.strip().strip("`").strip()
-        if not raw:
-            fallback = self._extractive(question, chunks, top_sim)
-            fallback.reason = "生成模型返回空内容，已改用原文摘录"
-            return fallback
-        if "资料中没有找到足够依据" in raw[:40]:
-            return Answer(REFUSAL, "insufficient", reason="模型判定材料不足")
+    else:
+        result = _extractive(question, evidence, "未启用生成模型，使用原文摘录")
 
-        cited = [int(n) for n in _CITATION.findall(raw) if 1 <= int(n) <= len(chunks)]
-        if not cited:
-            fallback = self._extractive(question, chunks, top_sim)
-            fallback.reason = "生成模型没有给出可核验引用，已改用原文摘录（更利于逐句核对）"
-            return fallback
-        # 去掉越界编号，保证前端不会点到不存在的证据
-        def _clean(match: re.Match[str]) -> str:
-            value = int(match.group(1))
-            return f"[{value}]" if 1 <= value <= len(chunks) else ""
-
-        cleaned = _CITATION.sub(_clean, raw)
-        cited = sorted(set(cited))
-        return Answer(
-            cleaned,
-            "llm",
-            reason=f"{time.time() - started:.1f}s",
-            citations=cited,
-        )
+    return Answer(
+        mode=result["mode"],
+        answer=result["answer"],
+        citations=result["citations"],
+        reason=result["reason"],
+        confidence=confidence,
+        evidence=[
+            _citation(row, index, index in result["used_numbers"])
+            for index, row in enumerate(evidence, 1)
+        ],
+        trace=trace,
+        llm_error=llm_error,
+    )

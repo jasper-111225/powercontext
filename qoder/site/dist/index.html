@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>据典 Judian · 每一句答案，都能回到原文</title>
+<meta name="description" content="据典是一个本地优先的资料证据助手：用 seekdb 做向量与全文混合检索，只依据证据回答，每句带可点击引用，学习记忆交给 PowerContext。" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+
+<header class="topbar">
+  <a class="brand" href="#top" aria-label="据典首页">
+    <span class="seal" aria-hidden="true">典</span>
+    <span class="brand-text">据典<small>Judian</small></span>
+  </a>
+  <nav class="nav" aria-label="主导航">
+    <a href="#problem">为什么</a>
+    <a href="#demo">看一次回答</a>
+    <a href="#how">怎么工作</a>
+    <a href="#metrics">评测</a>
+    <a href="#start">运行</a>
+  </nav>
+  <a class="btn btn-ghost" href="https://github.com/jasper-111225/powercontext" target="_blank" rel="noreferrer">代码仓库</a>
+</header>
+
+<main id="main">
+  <section class="hero" id="top">
+    <p class="eyebrow">2026 OceanBase 数据库大赛 · 生态赛道（Qoder）</p>
+    <h1>每一句答案，<br />都能回到原文。</h1>
+    <p class="lede">
+      把 Markdown、PDF 和笔记导入 <strong>seekdb</strong>，用向量 + 全文混合检索找证据，
+      只依据证据回答。正文里的 <span class="inline-cite">[n]</span> 点开就是原文；
+      学习主题与进度交给 <strong>PowerContext</strong> 记住。
+    </p>
+    <div class="actions">
+      <a class="btn btn-primary" href="#demo">看一次带引用的回答</a>
+      <a class="btn" href="#start">三条命令跑起来</a>
+    </div>
+    <dl class="facts">
+      <div><dt>语料</dt><dd>9 篇 seekdb 开发者文档</dd></div>
+      <div><dt>片段</dt><dd>135 个（本机解析）</dd></div>
+      <div><dt>评测</dt><dd>23 题：20 可答 + 3 资料外</dd></div>
+      <div><dt>部署</dt><dd>本地优先，无外部 API</dd></div>
+    </dl>
+  </section>
+
+  <section class="section" id="problem">
+    <div class="section-head">
+      <p class="kicker">为什么做它</p>
+      <h2>资料不缺，缺的是能核对的答案</h2>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="num">01</span>
+        <h3>资料散</h3>
+        <p>官方文档、PDF、实验笔记各在一处。关键词搜不全，路径、命令、错误码这类精确串尤其容易漏。</p>
+        <p class="fix">同一张表里做向量近邻 + IK 全文召回，RRF 融合。</p>
+      </article>
+      <article class="card">
+        <span class="num">02</span>
+        <h3>AI 不可信</h3>
+        <p>通用聊天机器人答得顺，但经常编，事后无法核对；技术文档里一个路径错了就白忙。</p>
+        <p class="fix">只把检索到的片段交给模型；没有合法引用就退回原文摘录。</p>
+      </article>
+      <article class="card">
+        <span class="num">03</span>
+        <h3>每次都从头开始</h3>
+        <p>上周读到哪、哪里没懂、喜欢多详细，没人记得，每次都要重新交代背景。</p>
+        <p class="fix">主题、目标、偏好、薄弱问题写入 PowerContext，重启后仍在。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="demo">
+    <div class="section-head">
+      <p class="kicker">看一次回答</p>
+      <h2>答案、证据、检索轨迹，在同一屏</h2>
+      <p class="section-note">
+        下面是 <code>docs/验证样例.md</code> 中的三条实际运行记录，可用仓库里的固定语料复跑。
+        点击正文中的 <span class="inline-cite">[n]</span> 会高亮右侧对应证据。
+      </p>
+    </div>
+
+    <div class="demo">
+      <div class="demo-tabs" role="tablist" aria-label="示例问题">
+        <button class="tab is-active" role="tab" aria-selected="true" data-scene="release">编译产物在哪</button>
+        <button class="tab" role="tab" aria-selected="false" data-scene="gdb">怎么用 GDB 调试</button>
+        <button class="tab" role="tab" aria-selected="false" data-scene="refuse">资料外的问题</button>
+      </div>
+
+      <div class="scene is-active" id="scene-release">
+        <div class="answer-col">
+          <p class="question">Release 模式的编译产物在哪个目录？</p>
+          <div class="meta">
+            <span class="pill pill-ok">extractive</span>
+            <span>置信度 0.654</span><span>2.06 s</span>
+          </div>
+          <div class="bubble">
+            <p>根据资料原文：</p>
+            <ul>
+              <li>编译产物位于： build_release/src/observer/seekdb <button class="cite" data-n="1" aria-label="查看证据 1">[1]</button></li>
+              <li>与 Release 模式相同，增加 --make 可以在配置后直接编译： ./build.sh sanity --init --make -j32 <button class="cite" data-n="2" aria-label="查看证据 2">[2]</button></li>
+              <li>使用以下命令列出可用的模块目标： make -C build_release help | grep '_tests' <button class="cite" data-n="6" aria-label="查看证据 6">[6]</button></li>
+            </ul>
+          </div>
+          <details class="trace">
+            <summary>检索轨迹：向量 Top-3 / 全文 Top-3</summary>
+            <table>
+              <thead><tr><th>来源</th><th>标题路径</th><th>向量</th><th>全文</th><th>RRF</th></tr></thead>
+              <tbody>
+                <tr><td>获取代码、编译并运行 seekdb</td><td>编译生产二进制</td><td>3</td><td><strong>1</strong></td><td>0.033266</td></tr>
+                <tr><td>获取代码、编译并运行 seekdb</td><td>编译 Sanity 二进制</td><td>7</td><td>2</td><td>0.032054</td></tr>
+                <tr><td>调试 seekdb</td><td>—</td><td><strong>1</strong></td><td>4</td><td>0.032018</td></tr>
+              </tbody>
+            </table>
+            <p class="trace-note">全文路把「编译产物」精确命中的段落排到第 1；向量路把语义相近的调试文档排到第 1；RRF 后构建文档的两段占据前二。</p>
+          </details>
+        </div>
+        <aside class="evidence" aria-label="证据">
+          <article class="ev" data-n="1">
+            <header><span class="ev-n">1</span><span class="ev-title">获取代码、编译并运行 seekdb</span></header>
+            <p class="ev-head">编译生产二进制</p>
+            <p class="ev-text">编译产物位于： build_release/src/observer/seekdb</p>
+            <p class="ev-ranks"><span>向量 #3</span><span>全文 #1</span><span>RRF 0.033266</span></p>
+          </article>
+          <article class="ev" data-n="2">
+            <header><span class="ev-n">2</span><span class="ev-title">获取代码、编译并运行 seekdb</span></header>
+            <p class="ev-head">编译 Sanity 二进制</p>
+            <p class="ev-text">与 Release 模式相同，增加 --make 可以在配置后直接编译： ./build.sh sanity --init --make -j32</p>
+            <p class="ev-ranks"><span>向量 #7</span><span>全文 #2</span><span>RRF 0.032054</span></p>
+          </article>
+          <article class="ev" data-n="6">
+            <header><span class="ev-n">6</span><span class="ev-title">获取代码、编译并运行 seekdb</span></header>
+            <p class="ev-head">—</p>
+            <p class="ev-text">使用以下命令列出可用的模块目标： make -C build_release help | grep '_tests'</p>
+            <p class="ev-ranks"><span>证据 #6</span></p>
+          </article>
+        </aside>
+      </div>
+
+      <div class="scene" id="scene-gdb">
+        <div class="answer-col">
+          <p class="question">怎么用 GDB 调试 seekdb？</p>
+          <div class="meta"><span class="pill pill-ok">extractive</span><span>置信度 0.762</span><span>1.68 s</span></div>
+          <div class="bubble">
+            <p>根据《调试 seekdb》的原文：</p>
+            <ul>
+              <li>分析 core dump 时，必须使用生成该文件的同一二进制： gdb /path/to/seekdb /path/to/core <button class="cite" data-n="1">[1]</button></li>
+              <li>随后可以使用常规调试器命令设置断点、查看变量和获取 backtrace。<button class="cite" data-n="1">[1]</button></li>
+              <li>软件包将运行时二进制安装到 /usr/bin/seekdb。<button class="cite" data-n="2">[2]</button></li>
+            </ul>
+          </div>
+          <details class="trace">
+            <summary>检索轨迹</summary>
+            <table>
+              <thead><tr><th>来源</th><th>标题路径</th><th>向量</th><th>全文</th></tr></thead>
+              <tbody>
+                <tr><td>调试 seekdb</td><td>使用 GDB 或 LLDB</td><td>7</td><td>2</td></tr>
+                <tr><td>调试 seekdb</td><td>使用 RPM debuginfo</td><td><strong>1</strong></td><td>3</td></tr>
+              </tbody>
+            </table>
+            <p class="trace-note">两条证据都来自 <code>debug.md</code>，标题路径直接指出「使用 GDB 或 LLDB」一节。</p>
+          </details>
+        </div>
+        <aside class="evidence" aria-label="证据">
+          <article class="ev" data-n="1">
+            <header><span class="ev-n">1</span><span class="ev-title">调试 seekdb</span></header>
+            <p class="ev-head">使用 GDB 或 LLDB</p>
+            <p class="ev-text">分析 core dump 时，必须使用生成该文件的同一二进制： gdb /path/to/seekdb /path/to/core</p>
+            <p class="ev-ranks"><span>向量 #7</span><span>全文 #2</span></p>
+          </article>
+          <article class="ev" data-n="2">
+            <header><span class="ev-n">2</span><span class="ev-title">调试 seekdb</span></header>
+            <p class="ev-head">使用 RPM debuginfo</p>
+            <p class="ev-text">软件包将运行时二进制安装到 /usr/bin/seekdb。</p>
+            <p class="ev-ranks"><span>向量 #1</span><span>全文 #3</span></p>
+          </article>
+        </aside>
+      </div>
+
+      <div class="scene" id="scene-refuse">
+        <div class="answer-col">
+          <p class="question">seekdb 支持 MongoDB 协议吗？</p>
+          <div class="meta"><span class="pill pill-stop">insufficient</span><span>1.50 s</span><span>citations = []</span></div>
+          <div class="bubble bubble-stop">
+            <p>资料中没有找到足够依据来回答这个问题。换一种问法，或把这个主题的资料导入资料库后再试。</p>
+          </div>
+          <p class="reason"><strong>拒答依据：</strong>资料中没有出现：mongodb（不做语料外推断）</p>
+          <p class="reason">即使向量检索仍会返回若干「相似」片段，也不会拿它们拼答案。</p>
+        </div>
+        <aside class="evidence" aria-label="证据">
+          <article class="ev ev-muted">
+            <header><span class="ev-n">—</span><span class="ev-title">没有可用证据</span></header>
+            <p class="ev-text">问句中的英文实体在全部片段里不存在，系统直接拒答。另外两道不可答题（GPU 加速、Kubernetes Operator）同样被拒。</p>
+          </article>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="section-head">
+      <p class="kicker">怎么工作</p>
+      <h2>一次提问，三次落库</h2>
+    </div>
+    <ol class="steps">
+      <li>
+        <span class="step-n">1</span>
+        <h3>检索</h3>
+        <p>问题向量化后，seekdb 同时做 <code>cosine_distance</code> 向量召回与 <code>MATCH ... AGAINST</code> 全文召回，各取 30 条。</p>
+      </li>
+      <li>
+        <span class="step-n">2</span>
+        <h3>作答</h3>
+        <p>RRF 融合取前 6 条交给本地模型；逐句校验 <code>[n]</code> 是否落在证据范围内，不合格就退回抽取式原文摘录。</p>
+      </li>
+      <li>
+        <span class="step-n">3</span>
+        <h3>记住</h3>
+        <p>问答写入 <code>queries</code>，引用快照随笔记写入 <code>notes</code>；研究主题与进度交给 PowerContext。</p>
+      </li>
+    </ol>
+    <div class="diagram" aria-label="架构示意">
+      <div class="node">浏览器<small>无构建前端</small></div>
+      <div class="arrow">→</div>
+      <div class="node node-main">FastAPI<small>/api/ask · /api/import · /api/memory</small></div>
+      <div class="arrow">→</div>
+      <div class="stack">
+        <div class="node node-db">seekdb :2881<small>documents · chunks · queries · notes</small></div>
+        <div class="node">Ollama :11434<small>qwen3-embedding · qwen2.5</small></div>
+        <div class="node node-mem">PowerContext :17430<small>judian-profile · judian-progress</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="stack">
+    <div class="section-head">
+      <p class="kicker">两个数据库，两种记忆</p>
+      <h2>seekdb 记资料，PowerContext 记人</h2>
+    </div>
+    <div class="split">
+      <article class="panel">
+        <h3>seekdb：可引用的证据</h3>
+        <p>同一张 <code>chunks</code> 表里同时建 HNSW 向量索引和 IK 全文索引，不做外部检索引擎。</p>
+<pre><code><span class="c">-- 向量召回（余弦）</span>
+SELECT id, 1 - cosine_distance(embedding, %s) AS vec_sim
+FROM chunks ORDER BY cosine_distance(embedding, %s) LIMIT 30;
+
+<span class="c">-- 全文召回（IK 分词）</span>
+SELECT id, MATCH(text) AGAINST(%s IN NATURAL LANGUAGE MODE) AS ft_score
+FROM chunks
+WHERE MATCH(text) AGAINST(%s IN NATURAL LANGUAGE MODE)
+ORDER BY ft_score DESC LIMIT 30;</code></pre>
+        <p class="panel-note">两路各 30 条，RRF <code>1/(60+rank)</code> 融合。中文技术文档里的路径与命令，靠全文路补足向量不敏感的部分。</p>
+      </article>
+      <article class="panel">
+        <h3>PowerContext：可延续的学习</h3>
+        <p>每个学习者一个 Scope（<code>judian-learning</code>），两类显式记忆，重启 Server 后仍在。</p>
+        <ul class="mem-list">
+          <li><code>judian-profile</code><span>研究主题、本周目标、回答详略偏好</span></li>
+          <li><code>judian-progress</code><span>累计提问、上次问题、引用过的文档、薄弱主题</span></li>
+        </ul>
+<pre><code>POST /v1/memory/remember        <span class="c"># 写入</span>
+POST /v1/memory/entries/list    <span class="c"># 读回</span></code></pre>
+        <p class="panel-note">服务离线时写入 <code>.runtime/memory_fallback.json</code>，接口返回 <code>source=local</code>，界面如实标注「本地暂存」。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="metrics">
+    <div class="section-head">
+      <p class="kicker">固定题集</p>
+      <h2>23 题，逐题可复跑</h2>
+      <p class="section-note">20 道可答题 + 3 道资料外问题，语料为 9 篇 seekdb 官方开发者文档。运行 <code>scripts/eval.py</code> 生成逐题结果。</p>
+    </div>
+    <div class="metrics">
+      <div><strong>100%</strong><span>Recall@5（20/20）</span></div>
+      <div><strong>100%</strong><span>引用命中（20/20）</span></div>
+      <div><strong>100%</strong><span>拒答准确（3/3）</span></div>
+      <div><strong>176 ms</strong><span>中位耗时 p50</span></div>
+    </div>
+    <p class="fineprint">指标来自本机已验证环境的评测记录，写入 <code>docs/evidence/eval.json</code>；换语料或换模型后需要重新评测。</p>
+  </section>
+
+  <section class="section" id="start">
+    <div class="section-head">
+      <p class="kicker">从零运行</p>
+      <h2>三条命令，本地起来</h2>
+      <p class="section-note">需要 seekdb 1.4（2881）、Ollama（已拉取 <code>qwen3-embedding:0.6b</code>）与 PowerContext 1.4.0。</p>
+    </div>
+    <div class="start-grid">
+      <div class="panel">
+<pre class="cmd"><code><span class="c"># 1. 依赖 + 建库 + 灌入 9 篇语料</span>
+./scripts/setup.sh
+
+<span class="c"># 2. 启动记忆服务</span>
+./scripts/pc_server.sh start
+
+<span class="c"># 3. 打开 Web</span>
+./scripts/run.sh
+<span class="c"># http://127.0.0.1:8766</span></code></pre>
+      </div>
+      <div class="panel">
+        <h3>最小验证</h3>
+<pre><code>curl -s http://127.0.0.1:8766/api/health
+
+curl -s -X POST http://127.0.0.1:8766/api/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"Release 模式的编译产物在哪个目录？"}'</code></pre>
+        <p class="panel-note">期望答案包含 <code>build_release/src/observer/seekdb</code>，<code>citations</code> 非空，证据里同时有向量与全文排名。</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div>
+    <span class="seal seal-sm" aria-hidden="true">典</span>
+    <strong>据典 Judian</strong>
+    <p>本地优先的资料证据助手。示例语料来自 oceanbase/seekdb 开发者文档（Apache-2.0），仅做格式转换与分块。</p>
+  </div>
+  <div class="footer-links">
+    <a href="https://github.com/jasper-111225/powercontext" target="_blank" rel="noreferrer">GitHub 仓库</a>
+    <a href="https://github.com/oceanbase/seekdb" target="_blank" rel="noreferrer">seekdb</a>
+    <span>2026 OceanBase 数据库大赛 · Qoder 赛道</span>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

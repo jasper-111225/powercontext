@@ -1,11 +1,5 @@
-#!/usr/bin/env python
-"""跑固定评测集：Recall@5、引用命中率、拒答准确率、平均耗时。
-
-  python scripts/eval.py              # 完整链路（检索 + 生成/摘录）
-  python scripts/eval.py --no-llm     # 只跑检索 + 抽取式，快速自查
-  python scripts/eval.py --limit 5    # 冒烟
-"""
-
+#!/usr/bin/env python3
+"""固定题集评测：Recall@5、引用命中、拒答准确率与时延。"""
 from __future__ import annotations
 
 import argparse
@@ -13,146 +7,264 @@ import json
 import statistics
 import sys
 import time
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import db  # noqa: E402
-from app.config import settings  # noqa: E402
-from app.embed import Embedder  # noqa: E402
-from app.llm import Answerer  # noqa: E402
+from app.config import Settings  # noqa: E402
+from app.db import DBUnavailable, SeekDB  # noqa: E402
+from app.embed import Embedder, EmbeddingError  # noqa: E402
+from app.llm import LLMClient, answer_question  # noqa: E402
 
 
-def doc_matches(source: str, expected: str) -> bool:
-    return bool(expected) and Path(source).name == expected
+def _utf8_stdout() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+
+
+def _text_of(row: dict[str, Any]) -> str:
+    return " ".join(
+        str(row.get(key) or "") for key in ("text", "doc_title", "heading", "source")
+    ).lower()
+
+
+def _hit(rows: list[dict[str, Any]], keywords: list[str]) -> bool:
+    lowered = [keyword.lower() for keyword in keywords if keyword]
+    if not lowered:
+        return False
+    return any(any(keyword in _text_of(row) for keyword in lowered) for row in rows)
+
+
+def _citation_hit(citations: list[dict[str, Any]], keywords: list[str]) -> bool:
+    lowered = [keyword.lower() for keyword in keywords if keyword]
+    if not lowered or not citations:
+        return False
+    for citation in citations:
+        text = str(citation.get("text") or "").lower()
+        if any(keyword in text for keyword in lowered):
+            return True
+    return False
+
+
+def _markdown(report: dict[str, Any]) -> str:
+    summary = report["summary"]
+    lines = [
+        "# 据典固定题集评测",
+        "",
+        f"- 生成时间：{report['generated_at']}",
+        f"- 向量模型：`{report['model']}`",
+        f"- 语料：{report['corpus']['documents']} 篇 / {report['corpus']['chunks']} 片段",
+        f"- 题集：{summary['answerable']} 道可答 + {summary['unanswerable']} 道资料外",
+        "",
+        "## 指标",
+        "",
+        "| 指标 | 数值 |",
+        "|---|---:|",
+        f"| Recall@{report['top_k']} | {summary['recall_at_5'] * 100:.0f}% "
+        f"（{summary['recall_hits']}/{summary['answerable']}） |",
+        f"| 引用命中率 | {summary['citation_hit'] * 100:.0f}% "
+        f"（{summary['citation_hits']}/{summary['answerable']}） |",
+        f"| 拒答准确率 | {summary['refusal_accuracy'] * 100:.0f}% "
+        f"（{summary['refusal_hits']}/{summary['unanswerable']}） |",
+        f"| 中位耗时 | {summary['p50_ms']} ms |",
+        f"| 平均耗时 | {summary['mean_ms']} ms |",
+        "",
+        "## 逐题结果",
+        "",
+        "| # | 问题 | 类型 | 模式 | Recall@5 | 引用 | 拒答 | 耗时 |",
+        "|---|---|---|---|---|---|---|---:|",
+    ]
+    for row in report["questions"]:
+        kind = "可答" if row["answerable"] else "资料外"
+        recall = "—" if not row["answerable"] else ("命中" if row["recall_at_5"] else "未命中")
+        cite = "—" if not row["answerable"] else ("有" if row["citation_hit"] else "无")
+        refusal = "—" if row["answerable"] else ("已拒答" if row["refused"] else "未拒答")
+        question = str(row["question"]).replace("|", "\\|")
+        lines.append(
+            f"| {row['id']} | {question} | {kind} | {row['mode']} | {recall} | {cite} | "
+            f"{refusal} | {row['elapsed_ms']} ms |"
+        )
+    lines.append("")
+    return "\n".join(lines)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--gold", default=str(ROOT / "data" / "gold.json"))
-    parser.add_argument("--no-llm", action="store_true")
-    parser.add_argument("--limit", type=int, default=0)
+    _utf8_stdout()
+    parser = argparse.ArgumentParser(description="据典固定题集评测")
+    parser.add_argument("--limit", type=int, default=None, help="只跑前 N 题（调试用）")
+    parser.add_argument("--ids", default=None, help="只跑指定 id，逗号分隔，例如 a01,u01")
+    parser.add_argument("--no-llm", action="store_true", help="强制抽取式作答，不调用生成模型")
     args = parser.parse_args()
 
-    gold = json.loads(Path(args.gold).read_text(encoding="utf-8"))
-    cases = gold["cases"][: args.limit] if args.limit else gold["cases"]
-    embedder = Embedder()
-    answerer = Answerer()
-    conn = db.connect()
-    results = []
-    latencies = []
+    settings = Settings.load()
+    if args.no_llm:
+        settings = replace(settings, llm_enabled=False)
+
+    gold_path = settings.gold_path
     try:
-        corpus_text = db.corpus_text(conn)
-        for index, case in enumerate(cases, start=1):
-            started = time.perf_counter()
-            vector = embedder.embed_one(case["question"])
-            search = db.hybrid_search(conn, case["question"], vector)
-            evidence = search["fused"]
-            top_sim = max((item.get("vec_sim") or 0) for item in evidence) if evidence else 0.0
-            if args.no_llm:
-                answer = answerer._extractive(case["question"], evidence, top_sim)
-            else:
-                answer = answerer.answer(case["question"], evidence, corpus_text=corpus_text)
-            elapsed = (time.perf_counter() - started) * 1000
-            latencies.append(elapsed)
+        gold = json.loads(gold_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"[FAIL] 读取 {gold_path} 失败：{exc}", file=sys.stderr)
+        return 1
+    questions = gold.get("questions") if isinstance(gold, dict) else None
+    if not isinstance(questions, list) or not questions:
+        print("[FAIL] data/gold.json 缺少 questions", file=sys.stderr)
+        return 1
+    if args.ids:
+        wanted = {item.strip() for item in args.ids.split(",") if item.strip()}
+        questions = [item for item in questions if item.get("id") in wanted]
+    if args.limit:
+        questions = questions[: args.limit]
+    top_k = int(gold.get("top_k") or 5)
 
-            top5 = evidence[:5]
-            recall_hit = any(doc_matches(item["source"], case["expect_doc"]) for item in top5)
-            cited_docs = [
-                evidence[i - 1]["source"]
-                for i in answer.citations
-                if 1 <= i <= len(evidence)
-            ]
-            citation_hit = any(doc_matches(source, case["expect_doc"]) for source in cited_docs)
-            refused = answer.mode == "insufficient"
-            correct = (refused if not case["answerable"] else (not refused))
+    db = SeekDB(settings)
+    ok, detail = db.ping()
+    if not ok:
+        print(f"[FAIL] seekdb 连接失败：{detail}", file=sys.stderr)
+        return 2
+    try:
+        stats = db.stats()
+    except Exception as exc:
+        print(f"[FAIL] 读取语料统计失败：{exc}", file=sys.stderr)
+        return 2
+    if stats["chunks"] <= 0:
+        print("[FAIL] 语料为空，请先运行 .venv/bin/python scripts/seed.py", file=sys.stderr)
+        return 2
 
-            row = {
-                "id": case["id"],
-                "question": case["question"],
-                "expected": case["expect_doc"],
-                "answerable": case["answerable"],
-                "recall_hit": recall_hit,
-                "citation_hit": citation_hit,
-                "refused": refused,
-                "correct": correct,
+    embedder = Embedder(settings)
+    llm = LLMClient(settings)
+    results: list[dict[str, Any]] = []
+    latencies: list[int] = []
+
+    print(
+        f"评测 {len(questions)} 题 · Top-{top_k} · 语料 {stats['documents']} 篇 / "
+        f"{stats['chunks']} 片段 · 模型 {settings.embed_model}"
+    )
+    for index, item in enumerate(questions, start=1):
+        question = str(item.get("question") or "").strip()
+        keywords = [str(keyword) for keyword in item.get("keywords") or [] if keyword]
+        answerable = bool(item.get("answerable", True))
+        started = time.perf_counter()
+        try:
+            vector = embedder.embed_query(question)
+            retrieved = db.hybrid_search(question, vector, limit=settings.recall_limit)
+            answer = answer_question(
+                question,
+                retrieved["fused"],
+                retrieved["vector"],
+                retrieved["fulltext"],
+                settings=settings,
+                llm=llm,
+                corpus_contains=db.corpus_contains,
+                profile=None,
+                style="concise",
+            )
+        except EmbeddingError as exc:
+            print(f"\n[FAIL] 第 {index} 题向量化失败：{exc}", file=sys.stderr)
+            return 3
+        except DBUnavailable as exc:
+            print(f"\n[FAIL] 第 {index} 题检索失败：{exc}", file=sys.stderr)
+            return 2
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
+        latencies.append(elapsed_ms)
+
+        top_rows = retrieved["fused"][:top_k]
+        recall_ok = answerable and _hit(top_rows, keywords)
+        citation_ok = answerable and _citation_hit(answer.citations, keywords)
+        refused = answer.mode == "insufficient"
+        results.append(
+            {
+                "id": str(item.get("id") or index),
+                "question": question,
+                "answerable": answerable,
+                "keywords": keywords,
                 "mode": answer.mode,
-                "confidence": round(top_sim, 3),
-                "latency_ms": int(elapsed),
-                "top5": [Path(item["source"]).name for item in top5],
-                "cited": [Path(source).name for source in cited_docs],
-                "answer": answer.text[:280],
+                "confidence": round(answer.confidence, 4),
+                "elapsed_ms": elapsed_ms,
+                "recall_at_5": recall_ok,
+                "citation_hit": citation_ok,
+                "refused": refused,
+                "reason": answer.reason,
+                "answer": answer.answer,
+                "citations": [
+                    {
+                        "n": citation.get("n"),
+                        "chunk_id": citation.get("chunk_id"),
+                        "doc_title": citation.get("doc_title"),
+                        "heading": citation.get("heading"),
+                    }
+                    for citation in answer.citations
+                ],
+                "top_k": [
+                    {
+                        "rank": rank,
+                        "chunk_id": row.get("id"),
+                        "doc_title": row.get("doc_title"),
+                        "heading": row.get("heading"),
+                        "rrf": row.get("rrf"),
+                    }
+                    for rank, row in enumerate(top_rows, start=1)
+                ],
             }
-            results.append(row)
-            mark = "✓" if correct and (recall_hit or not case["answerable"]) else "✗"
-            print(
-                f"[{index:2d}/{len(cases)}] {mark} {case['id']} {answer.mode:12s} "
-                f"R@5={'Y' if recall_hit else 'N'} cite={'Y' if citation_hit else 'N'} "
-                f"{row['latency_ms']:5d}ms  {case['question'][:36]}",
-                flush=True,
-            )
+        )
+        mark = "✓" if (recall_ok and citation_ok) or (not answerable and refused) else "×"
+        print(
+            f"  {mark} {item.get('id', index):>3} {answer.mode:<12} "
+            f"{elapsed_ms:>5} ms  {question[:42]}"
+        )
 
-        answerable = [r for r in results if r["answerable"]]
-        unanswerable = [r for r in results if not r["answerable"]]
-        metrics = {
-            "recall_at_5": round(sum(r["recall_hit"] for r in answerable) / max(1, len(answerable)), 4),
-            "citation_hit": round(sum(r["citation_hit"] for r in answerable) / max(1, len(answerable)), 4),
-            "refusal_accuracy": round(
-                sum(r["refused"] for r in unanswerable) / max(1, len(unanswerable)), 4
-            ),
-            "answer_accuracy": round(
-                sum(r["correct"] for r in answerable) / max(1, len(answerable)), 4
-            ),
-            "avg_latency_ms": int(statistics.mean(latencies)),
-            "p50_latency_ms": int(statistics.median(latencies)),
-            "total": len(results),
-            "answerable": len(answerable),
-            "unanswerable": len(unanswerable),
-            "corpus_chunks": db.corpus_stats(conn)["chunks"],
-        }
-        payload = {
-            "run_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-            "model": settings.llm_model,
-            "embed_model": settings.embed_model,
-            "mode": "extractive" if args.no_llm else "full",
-            "metrics": metrics,
-            "cases": results,
-        }
-        out = ROOT / "docs" / "evidence" / "eval.json"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    answerable_rows = [row for row in results if row["answerable"]]
+    unanswerable_rows = [row for row in results if not row["answerable"]]
+    recall_hits = sum(1 for row in answerable_rows if row["recall_at_5"])
+    citation_hits = sum(1 for row in answerable_rows if row["citation_hit"])
+    refusal_hits = sum(1 for row in unanswerable_rows if row["refused"])
+    summary = {
+        "total": len(results),
+        "answerable": len(answerable_rows),
+        "unanswerable": len(unanswerable_rows),
+        "recall_hits": recall_hits,
+        "citation_hits": citation_hits,
+        "refusal_hits": refusal_hits,
+        "recall_at_5": recall_hits / len(answerable_rows) if answerable_rows else 0.0,
+        "citation_hit": citation_hits / len(answerable_rows) if answerable_rows else 0.0,
+        "refusal_accuracy": refusal_hits / len(unanswerable_rows) if unanswerable_rows else 0.0,
+        "p50_ms": int(statistics.median(latencies)) if latencies else 0,
+        "mean_ms": int(statistics.mean(latencies)) if latencies else 0,
+    }
+    report = {
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "model": settings.embed_model,
+        "llm_model": settings.llm_model if settings.llm_enabled else None,
+        "top_k": top_k,
+        "corpus": stats,
+        "summary": summary,
+        "questions": results,
+    }
 
-        lines = [
-            "# 评测结果",
-            "",
-            f"- 运行时间：{payload['run_at']}",
-            f"- 生成模型：`{payload['model']}`；向量模型：`{payload['embed_model']}`；模式：`{payload['mode']}`",
-            f"- 语料：{metrics['corpus_chunks']} 个片段；题目：{metrics['total']}（可答 {metrics['answerable']} / 不可答 {metrics['unanswerable']}）",
-            "",
-            "| 指标 | 数值 |",
-            "|---|---:|",
-            f"| Recall@5 | {metrics['recall_at_5']:.0%} |",
-            f"| 引用命中率 | {metrics['citation_hit']:.0%} |",
-            f"| 拒答准确率 | {metrics['refusal_accuracy']:.0%} |",
-            f"| 中位耗时（p50） | {metrics['p50_latency_ms']} ms |",
-            f"| 平均耗时 | {metrics['avg_latency_ms']} ms（含一次模型重载） |",
-            "",
-            "| # | 问题 | 期望来源 | Top-5 | 引用 | 模式 |",
-            "|---|---|---|---|---|---|",
-        ]
-        for row in results:
-            lines.append(
-                f"| {row['id']} | {row['question']} | {row['expected'] or '—'} | "
-                f"{'✓' if row['recall_hit'] else '✗'} | {'✓' if row['citation_hit'] else '✗'} | {row['mode']} |"
-            )
-        (ROOT / "docs" / "evidence" / "eval.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-        print(json.dumps(metrics, ensure_ascii=False, indent=2))
-        print(f"写出 {out.relative_to(ROOT)} 与 docs/evidence/eval.md")
-        return 0
-    finally:
-        conn.close()
+    out_dir = settings.evidence_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    json_path = out_dir / "eval.json"
+    md_path = out_dir / "eval.md"
+    json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    md_path.write_text(_markdown(report), encoding="utf-8")
+
+    print()
+    print(
+        f"Recall@{top_k} {summary['recall_at_5'] * 100:.0f}% · "
+        f"引用命中 {summary['citation_hit'] * 100:.0f}% · "
+        f"拒答准确 {summary['refusal_accuracy'] * 100:.0f}% · "
+        f"p50 {summary['p50_ms']} ms · 均值 {summary['mean_ms']} ms"
+    )
+    print(f"已写入 {json_path.relative_to(ROOT)} 与 {md_path.relative_to(ROOT)}")
+    return 0
 
 
 if __name__ == "__main__":

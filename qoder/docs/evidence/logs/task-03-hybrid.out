@@ -1,0 +1,53 @@
+--------------
+SHOW CREATE TABLE judian.chunks
+--------------
+
+*************************** 1. row ***************************
+       Table: chunks
+Create Table: CREATE TABLE `chunks` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `doc_id` bigint(20) NOT NULL,
+  `ordinal` int(11) NOT NULL DEFAULT '0',
+  `heading` varchar(255) NOT NULL DEFAULT '',
+  `page` int(11) DEFAULT NULL,
+  `text` text NOT NULL,
+  `embedding` VECTOR(1024) NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_chunk_doc` (`doc_id`, `ordinal`) BLOCK_SIZE 16384 LOCAL,
+  FULLTEXT KEY `ft_chunk` (`text`) WITH PARSER ik PARSER_PROPERTIES=(ik_mode="smart") BLOCK_SIZE 16384,
+  VECTOR KEY `vi_chunk` (`embedding`) WITH (DISTANCE=COSINE, TYPE=HNSW, LIB=VSAG, M=16, EF_CONSTRUCTION=200, EF_SEARCH=64, SYNC_MODE=ASYNC) BLOCK_SIZE 16384
+) ORGANIZATION HEAP AUTO_INCREMENT = 1000005 DEFAULT CHARSET = utf8mb4 ROW_FORMAT = DYNAMIC COMPRESSION = 'zstd_1.3.8' BLOCK_SIZE = 16384 TABLET_SIZE = 134217728 PCTFREE = 0 LOB_INROW_THRESHOLD=78643
+1 row in set
+
+--------------
+SELECT c.id, LEFT(d.title, 12) AS doc, LEFT(c.heading, 18) AS heading,
+       ROUND(1 - cosine_distance(c.embedding, q.v), 4) AS cos,
+       ROUND(MATCH(c.text) AGAINST('seekdb 怎么查看系统日志？' IN NATURAL LANGUAGE MODE), 2) AS ft,
+       v.rk AS vec_rank, f.rk AS ft_rank,
+       ROUND(1/(60+v.rk) + COALESCE(1/(60+f.rk), 0), 6) AS rrf
+FROM judian.chunks c
+JOIN judian.documents d ON d.id = c.doc_id
+JOIN judian_scratch.qvec q ON q.id = 3
+JOIN (SELECT c2.id AS id, ROW_NUMBER() OVER (ORDER BY cosine_distance(c2.embedding, q2.v)) AS rk
+      FROM judian.chunks c2 JOIN judian_scratch.qvec q2 ON q2.id = 3
+      ORDER BY cosine_distance(c2.embedding, q2.v) LIMIT 30) v ON v.id = c.id
+LEFT JOIN (SELECT x.id AS id, ROW_NUMBER() OVER (ORDER BY MATCH(x.text) AGAINST('seekdb 怎么查看系统日志？' IN NATURAL LANGUAGE MODE) DESC) AS rk
+      FROM judian.chunks x
+      WHERE MATCH(x.text) AGAINST('seekdb 怎么查看系统日志？' IN NATURAL LANGUAGE MODE) LIMIT 30) f ON f.id = c.id
+ORDER BY rrf DESC
+LIMIT 5
+--------------
+
++-----+--------------------+----------------------+--------+------+----------+---------+--------+
+| id  | doc                | heading              | cos    | ft   | vec_rank | ft_rank | rrf    |
++-----+--------------------+----------------------+--------+------+----------+---------+--------+
+|  93 | 系统日志介绍       | OceanBase seekdb 系  | 0.7646 | 6.54 |        1 |       2 | 0.0325 |
+|  92 | 系统日志介绍       | OceanBase seekdb 系  | 0.7214 | 5.85 |        4 |       3 | 0.0315 |
+| 120 | 系统日志介绍       | OceanBase seekdb 系  | 0.7553 | 5.15 |        2 |       6 | 0.0313 |
+|  96 | 系统日志介绍       | OceanBase seekdb 系  | 0.6645 | 7.20 |        9 |       1 | 0.0309 |
+|  99 | 系统日志介绍       | OceanBase seekdb 系  | 0.7006 | 5.61 |        5 |       5 | 0.0308 |
++-----+--------------------+----------------------+--------+------+----------+---------+--------+
+5 rows in set
+
+Bye

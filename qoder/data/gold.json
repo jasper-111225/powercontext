@@ -1,28 +1,165 @@
 {
-  "description": "据典 · 检索与引用评测集。expect_doc 用于判断正确文档是否进入 Top-5；expect_terms 任一命中即算该片段包含答案。",
-  "cases": [
-    {"id": "q01", "question": "首次编译 seekdb 前需要初始化依赖吗？", "expect_doc": "build-and-run.md", "expect_terms": ["--init", "初始化"], "answerable": true},
-    {"id": "q02", "question": "Release 模式的编译产物在哪个目录？", "expect_doc": "build-and-run.md", "expect_terms": ["build_release/src/observer/seekdb"], "answerable": true},
-    {"id": "q03", "question": "build.sh 支持 Debug 模式吗？", "expect_doc": "build-and-run.md", "expect_terms": ["不支持 Debug"], "answerable": true},
-    {"id": "q04", "question": "增量编译使用什么命令？", "expect_doc": "build-and-run.md", "expect_terms": ["--make"], "answerable": true},
-    {"id": "q05", "question": "怎么启动一个本地 seekdb 实例？", "expect_doc": "build-and-run.md", "expect_terms": ["obd.sh", "deploy"], "answerable": true},
-    {"id": "q06", "question": "怎么停止并清理本地实例？", "expect_doc": "build-and-run.md", "expect_terms": ["destroy"], "answerable": true},
-    {"id": "q07", "question": "Debian 系统上要安装哪些工具链依赖？", "expect_doc": "toolchain.md", "expect_terms": ["apt", "Debian"], "answerable": true},
-    {"id": "q08", "question": "怎么用 GDB 调试 seekdb？", "expect_doc": "debug.md", "expect_terms": ["gdb", "GDB"], "answerable": true},
-    {"id": "q09", "question": "可调试二进制怎么构建？", "expect_doc": "debug.md", "expect_terms": ["debug", "RelWithDebInfo"], "answerable": true},
-    {"id": "q10", "question": "日志级别怎么配置？", "expect_doc": "logging.md", "expect_terms": ["日志级别", "level"], "answerable": true},
-    {"id": "q11", "question": "系统日志默认写到哪里？", "expect_doc": "logging.md", "expect_terms": ["log", "日志文件"], "answerable": true},
-    {"id": "q12", "question": "单元测试的构建怎么配置？", "expect_doc": "unittest.md", "expect_terms": ["测试", "unittest"], "answerable": true},
-    {"id": "q13", "question": "怎么编译并运行全部模块的测试？", "expect_doc": "unittest.md", "expect_terms": ["全部", "pretest"], "answerable": true},
-    {"id": "q14", "question": "mysqltest 怎么运行？", "expect_doc": "mysqltest.md", "expect_terms": ["mysqltest"], "answerable": true},
-    {"id": "q15", "question": "ob_malloc 和 OB_NEWx 有什么区别？", "expect_doc": "memory.md", "expect_terms": ["ob_malloc", "OB_NEWx"], "answerable": true},
-    {"id": "q16", "question": "ObArenaAllocator 适合什么场景？", "expect_doc": "memory.md", "expect_terms": ["Arena"], "answerable": true},
-    {"id": "q17", "question": "类名和成员变量怎么命名？", "expect_doc": "coding-convention.md", "expect_terms": ["命名"], "answerable": true},
-    {"id": "q18", "question": "为什么禁止使用 STL 容器？", "expect_doc": "coding-convention.md", "expect_terms": ["STL"], "answerable": true},
-    {"id": "q19", "question": "ObIArray 和 ObArray 有什么区别？", "expect_doc": "container.md", "expect_terms": ["ObIArray", "ObArray"], "answerable": true},
-    {"id": "q20", "question": "运行时内存预算怎么设置？", "expect_doc": "memory.md", "expect_terms": ["预算", "memory_limit"], "answerable": true},
-    {"id": "u01", "question": "seekdb 支持 MongoDB 协议吗？", "expect_doc": "", "expect_terms": [], "answerable": false},
-    {"id": "u02", "question": "怎么开启 GPU 加速？", "expect_doc": "", "expect_terms": [], "answerable": false},
-    {"id": "u03", "question": "Kubernetes Operator 怎么部署 seekdb？", "expect_doc": "", "expect_terms": [], "answerable": false}
+  "version": 1,
+  "top_k": 5,
+  "description": "据典固定评测集：20 道可答题 + 3 道资料外问题。keywords 用于核对 Top-5 召回与引用是否落到原文。",
+  "questions": [
+    {
+      "id": "a01",
+      "question": "Release 模式的编译产物在哪个目录？",
+      "answerable": true,
+      "keywords": ["build_release/src/observer/seekdb"],
+      "doc": "build-and-run.md"
+    },
+    {
+      "id": "a02",
+      "question": "Sanity 二进制的编译产物在哪里？",
+      "answerable": true,
+      "keywords": ["build_sanity/src/observer/seekdb"],
+      "doc": "build-and-run.md"
+    },
+    {
+      "id": "a03",
+      "question": "首次编译 seekdb 时，用于准备依赖的 Release 初始化命令是什么？",
+      "answerable": true,
+      "keywords": ["build.sh release --init"],
+      "doc": "build-and-run.md"
+    },
+    {
+      "id": "a04",
+      "question": "完成初始化后，Release 模式的增量编译命令是什么？",
+      "answerable": true,
+      "keywords": ["build.sh release --make"],
+      "doc": "build-and-run.md"
+    },
+    {
+      "id": "a05",
+      "question": "怎样用 obd.sh 部署并启动一个本地 seekdb 实例？",
+      "answerable": true,
+      "keywords": ["obd.sh deploy"],
+      "doc": "build-and-run.md"
+    },
+    {
+      "id": "a06",
+      "question": "seekdb 仓库固定使用哪个 Rust 版本？",
+      "answerable": true,
+      "keywords": ["1.97.1"],
+      "doc": "toolchain.md"
+    },
+    {
+      "id": "a07",
+      "question": "在 Windows 上编译 seekdb，Visual Studio 需要选择哪个工作负载？",
+      "answerable": true,
+      "keywords": ["使用 C++ 的桌面开发"],
+      "doc": "toolchain.md"
+    },
+    {
+      "id": "a08",
+      "question": "分析 core dump 时应该使用什么命令？",
+      "answerable": true,
+      "keywords": ["gdb /path/to/seekdb /path/to/core"],
+      "doc": "debug.md"
+    },
+    {
+      "id": "a09",
+      "question": "如何把 syslog 日志级别调整为 DEBUG？",
+      "answerable": true,
+      "keywords": ["syslog_level"],
+      "doc": "debug.md"
+    },
+    {
+      "id": "a10",
+      "question": "syslog 的 I/O 带宽限制默认是多少？",
+      "answerable": true,
+      "keywords": ["5MB"],
+      "doc": "logging.md"
+    },
+    {
+      "id": "a11",
+      "question": "每种 syslog 日志文件默认最多保留几个？",
+      "answerable": true,
+      "keywords": ["max_syslog_file_count"],
+      "doc": "logging.md"
+    },
+    {
+      "id": "a12",
+      "question": "memory_budget 设置为 0M 时，自动值以多少为目标？",
+      "answerable": true,
+      "keywords": ["80%"],
+      "doc": "memory.md"
+    },
+    {
+      "id": "a13",
+      "question": "memory_budget 显式设置为非零值时不得小于多少？",
+      "answerable": true,
+      "keywords": ["1 GiB"],
+      "doc": "memory.md"
+    },
+    {
+      "id": "a14",
+      "question": "ObArenaAllocator 的设计特点是什么？",
+      "answerable": true,
+      "keywords": ["多次申请一次释放"],
+      "doc": "memory.md"
+    },
+    {
+      "id": "a15",
+      "question": "为什么 seekdb 禁止使用 STL 容器？",
+      "answerable": true,
+      "keywords": ["多租户资源隔离"],
+      "doc": "coding-convention.md"
+    },
+    {
+      "id": "a16",
+      "question": "单入口单出口对函数返回有什么要求？",
+      "answerable": true,
+      "keywords": ["末尾返回"],
+      "doc": "coding-convention.md"
+    },
+    {
+      "id": "a17",
+      "question": "ObString 自己管理内存吗？",
+      "answerable": true,
+      "keywords": ["不管理内存"],
+      "doc": "container.md"
+    },
+    {
+      "id": "a18",
+      "question": "如何列出可用的单元测试模块目标？",
+      "answerable": true,
+      "keywords": ["make -C build_release help"],
+      "doc": "unittest.md"
+    },
+    {
+      "id": "a19",
+      "question": "哪个目标可以一次编译全部单元测试模块？",
+      "answerable": true,
+      "keywords": ["make -C build_release pretest"],
+      "doc": "unittest.md"
+    },
+    {
+      "id": "a20",
+      "question": "如何运行全部 mysqltest 测试？",
+      "answerable": true,
+      "keywords": ["mysqltest -n test --all"],
+      "doc": "mysqltest.md"
+    },
+    {
+      "id": "u01",
+      "question": "seekdb 支持 MongoDB 协议吗？",
+      "answerable": false,
+      "keywords": ["mongodb"]
+    },
+    {
+      "id": "u02",
+      "question": "seekdb 如何启用 GPU 加速？",
+      "answerable": false,
+      "keywords": ["gpu"]
+    },
+    {
+      "id": "u03",
+      "question": "如何用 Kubernetes Operator 部署 seekdb？",
+      "answerable": false,
+      "keywords": ["kubernetes", "operator"]
+    }
   ]
 }

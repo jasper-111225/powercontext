@@ -1,82 +1,103 @@
-#!/usr/bin/env python
-"""把 data/corpus 下的资料灌进 seekdb。
-
-用法：
-  python scripts/seed.py              # 增量：同一路径会覆盖
-  python scripts/seed.py --reset      # 清空 documents/chunks 后重灌（保留问答历史）
-  python scripts/seed.py --only '*.md'
-"""
-
+#!/usr/bin/env python3
+"""把 data/corpus 解析、向量化并写入 seekdb。"""
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import db  # noqa: E402
-from app.config import settings  # noqa: E402
-from app.embed import Embedder  # noqa: E402
-from app.pipeline import corpus_files, ingest_path  # noqa: E402
+from app.config import Settings  # noqa: E402
+from app.db import DBUnavailable, SeekDB  # noqa: E402
+from app.embed import Embedder, EmbeddingError  # noqa: E402
+from app.pipeline import Pipeline  # noqa: E402
+
+
+def _utf8_stdout() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dir", default=str(ROOT / "data" / "corpus"))
-    parser.add_argument("--only", default="*")
-    parser.add_argument("--reset", action="store_true")
+    _utf8_stdout()
+    parser = argparse.ArgumentParser(description="据典语料灌库")
+    parser.add_argument("--reset", action="store_true", help="清空资料与片段后重灌（保留问答与笔记）")
+    parser.add_argument("--only", metavar="GLOB", help="只灌匹配的文件名，例如 'build-*.md'")
+    parser.add_argument("--limit", type=int, default=None, help="最多灌入 N 篇")
+    parser.add_argument("--force", action="store_true", help="忽略 checksum，强制重新向量化")
     args = parser.parse_args()
 
-    settings.ensure_runtime()
-    db.init_db()
-    if args.reset:
-        conn = db.connect()
-        try:
-            db.reset_corpus(conn)
-        finally:
-            conn.close()
-    files = [p for p in corpus_files(Path(args.dir)) if p.match(args.only)]
-    if not files:
-        print(f"没有找到资料：{args.dir}/{args.only}", file=sys.stderr)
+    settings = Settings.load()
+    db = SeekDB(settings)
+    ok, detail = db.ping()
+    if not ok:
+        print(f"[FAIL] seekdb 连接失败：{detail}", file=sys.stderr)
+        print("       请确认 127.0.0.1:2881 在运行，并检查 .env 中的 JUDIAN_DB_*。", file=sys.stderr)
+        return 2
+
+    try:
+        db.ensure_database()
+        db.ensure_schema()
+    except DBUnavailable as exc:
+        print(f"[FAIL] 建库/建表失败：{exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:
+        print(f"[FAIL] 建表失败：{exc}", file=sys.stderr)
+        print("       请确认 seekdb 支持 VECTOR、FULLTEXT ... WITH PARSER ik 与 cosine_distance。", file=sys.stderr)
+        return 2
+
+    pipeline = Pipeline(settings, db=db, embedder=Embedder(settings))
+    total = {"documents": 0, "chunks": 0, "chars": 0, "skipped": 0}
+
+    def progress(index: int, count: int) -> None:
+        if count:
+            print(f"\r      语料进度 {index}/{count}", end="", flush=True)
+
+    try:
+        reports = pipeline.ingest_corpus(
+            only=args.only,
+            limit=args.limit,
+            reset=args.reset,
+            force=args.force,
+            progress=progress,
+        )
+    except EmbeddingError as exc:
+        print(f"\n[FAIL] 向量模型不可用：{exc}", file=sys.stderr)
+        print("       请先 ollama pull qwen3-embedding:0.6b，再重试。", file=sys.stderr)
+        return 3
+    except DBUnavailable as exc:
+        print(f"\n[FAIL] seekdb 写入失败：{exc}", file=sys.stderr)
+        return 2
+    except ValueError as exc:
+        print(f"\n[FAIL] {exc}", file=sys.stderr)
         return 1
 
-    manifest_path = Path(args.dir) / "manifest.json"
-    manifest = {}
-    if manifest_path.exists():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    print(f"seekdb {settings.db_host}:{settings.db_port}/{settings.db_name} · {len(files)} 篇资料")
-    embedder = Embedder()
-    started = time.time()
-    total_chunks = 0
-    for index, path in enumerate(files, start=1):
-        t0 = time.time()
-        print(f"[{index}/{len(files)}] {path.relative_to(Path(args.dir))}", flush=True)
-        result = ingest_path(path, embedder, title=manifest.get(path.name))
-        total_chunks += result["chunks"]
+    print()
+    for report in reports:
+        state = "跳过" if report.skipped else ("覆盖" if report.replaced else "新增")
+        total["documents"] += 1
+        total["chunks"] += report.chunks
+        total["chars"] += report.chars
+        total["skipped"] += 1 if report.skipped else 0
         print(
-            f"    {result['kind']:8s} {result['chunks']:3d} 块  "
-            f"{result['chars']:7d} 字符  {time.time() - t0:5.1f}s",
-            flush=True,
+            f"[{state}] {report.title}  "
+            f"{report.chunks} 片段 / {report.chars} 字符  ({report.source})"
         )
 
-    conn = db.connect()
-    try:
-        stats = db.corpus_stats(conn)
-    finally:
-        conn.close()
-    summary = {
-        "files": len(files),
-        "chunks_written": total_chunks,
-        "corpus": stats,
-        "elapsed_s": round(time.time() - started, 1),
-        "embed_model": settings.embed_model,
-        "db": f"{settings.db_host}:{settings.db_port}/{settings.db_name}",
-    }
-    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    stats = db.stats()
+    print()
+    print(
+        f"完成：{stats['documents']} 篇资料，{stats['chunks']} 个片段，"
+        f"{stats['chars']} 字符，平均 {stats['avg_chunk_chars']} 字符/片段。"
+    )
+    if total["skipped"]:
+        print(f"其中 {total['skipped']} 篇 checksum 未变，已跳过。")
     return 0
 
 
