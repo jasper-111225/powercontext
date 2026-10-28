@@ -44,7 +44,7 @@ Qoder 读取 `README.md`、`docs/技术说明.md` 与现有代码，逐项实现
 |---|---|
 | 单元测试 | `tests/test_core.py`、`test_api.py`、`test_memory.py`；`pytest -q` 37 项 |
 | 端到端验收 | `scripts/verify.py`；`docs/evidence/logs/verify-20261028-223911.md`（27 PASS） |
-| 评测逐题结果 | `docs/evidence/eval.json`、`eval.md`（Recall@5 95% · 引用 95% · 拒答 100% · p50 209 ms） |
+| 评测逐题结果 | `docs/evidence/eval.json`、`eval.md`（Recall@5 100% · 引用 100% · 拒答 100% · p50 52 ms） |
 | seekdb 实际 SQL | `app/db.py`；`docs/evidence/logs/task-03-seekdb-sql.md` |
 | PowerContext 读写 | `app/memory.py`；`docs/evidence/logs/task-06-memory-restart.md` |
 | 页面截图 | `docs/evidence/screens/` |

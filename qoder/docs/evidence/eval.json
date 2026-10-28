@@ -1,26 +1,26 @@
 {
-  "generated_at": "2026-10-28T22:52:54",
+  "generated_at": "2026-10-29T00:41:22",
   "model": "qwen3-embedding:0.6b",
   "llm_model": null,
   "top_k": 5,
   "corpus": {
     "documents": 9,
-    "chunks": 138,
-    "chars": 53892,
-    "avg_chunk_chars": 408.2
+    "chunks": 135,
+    "chars": 52711,
+    "avg_chunk_chars": 398.3
   },
   "summary": {
     "total": 23,
     "answerable": 20,
     "unanswerable": 3,
-    "recall_hits": 19,
-    "citation_hits": 19,
+    "recall_hits": 20,
+    "citation_hits": 20,
     "refusal_hits": 3,
-    "recall_at_5": 0.95,
-    "citation_hit": 0.95,
+    "recall_at_5": 1.0,
+    "citation_hit": 1.0,
     "refusal_accuracy": 1.0,
-    "p50_ms": 209,
-    "mean_ms": 372
+    "p50_ms": 52,
+    "mean_ms": 54
   },
   "questions": [
     {
@@ -32,7 +32,7 @@
       ],
       "mode": "extractive",
       "confidence": 0.6714,
-      "elapsed_ms": 17,
+      "elapsed_ms": 107,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -41,52 +41,52 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 33,
+          "chunk_id": 2000017,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制"
+          "heading": "编译生产二进制"
         },
         {
           "n": 3,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制"
+          "heading": "编译 Sanity 二进制"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 33,
+          "chunk_id": 2000017,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制",
+          "heading": "编译生产二进制",
           "rrf": 0.032266458495966696
         },
         {
           "rank": 2,
-          "chunk_id": 83,
+          "chunk_id": 2000069,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb",
           "rrf": 0.032018442622950824
         },
         {
           "rank": 3,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制",
-          "rrf": 0.031054405392392875
+          "heading": "编译 Sanity 二进制",
+          "rrf": 0.03128054740957967
         },
         {
           "rank": 4,
-          "chunk_id": 161,
+          "chunk_id": 2000145,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 配置测试构建",
-          "rrf": 0.031024531024531024
+          "heading": "配置测试构建",
+          "rrf": 0.03125763125763126
         },
         {
           "rank": 5,
-          "chunk_id": 157,
+          "chunk_id": 2000143,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › macOS 宿主机依赖 › macOS 27（Apple Silicon）",
-          "rrf": 0.031009615384615385
+          "heading": "验证环境",
+          "rrf": 0.029877369007803793
         }
       ]
     },
@@ -98,8 +98,8 @@
         "build_sanity/src/observer/seekdb"
       ],
       "mode": "extractive",
-      "confidence": 0.7461,
-      "elapsed_ms": 289,
+      "confidence": 0.7512,
+      "elapsed_ms": 49,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -108,46 +108,46 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制"
+          "heading": "编译 Sanity 二进制"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制",
+          "heading": "编译 Sanity 二进制",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 84,
+          "chunk_id": 2000070,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › 构建可调试二进制",
           "rrf": 0.03128054740957967
         },
         {
           "rank": 3,
-          "chunk_id": 86,
+          "chunk_id": 2000072,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › 使用 RPM debuginfo",
           "rrf": 0.03125763125763126
         },
         {
           "rank": 4,
-          "chunk_id": 162,
+          "chunk_id": 2000146,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 选择并编译模块",
-          "rrf": 0.03057889822595705
+          "heading": "选择并编译模块",
+          "rrf": 0.031024531024531024
         },
         {
           "rank": 5,
-          "chunk_id": 33,
+          "chunk_id": 2000017,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制",
-          "rrf": 0.03021353930031804
+          "heading": "编译生产二进制",
+          "rrf": 0.030621785881252923
         }
       ]
     },
@@ -159,8 +159,8 @@
         "build.sh release --init"
       ],
       "mode": "extractive",
-      "confidence": 0.9183,
-      "elapsed_ms": 1573,
+      "confidence": 0.924,
+      "elapsed_ms": 54,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -169,52 +169,52 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 33,
+          "chunk_id": 2000017,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制"
+          "heading": "编译生产二进制"
         },
         {
           "n": 3,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制"
+          "heading": "编译 Sanity 二进制"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 33,
+          "chunk_id": 2000017,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制",
+          "heading": "编译生产二进制",
           "rrf": 0.03252247488101534
         },
         {
           "rank": 2,
-          "chunk_id": 159,
+          "chunk_id": 2000143,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › 验证环境",
-          "rrf": 0.03177805800756621
+          "heading": "验证环境",
+          "rrf": 0.031544957774465976
         },
         {
           "rank": 3,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制",
+          "heading": "编译 Sanity 二进制",
           "rrf": 0.03149801587301587
         },
         {
           "rank": 4,
-          "chunk_id": 147,
+          "chunk_id": 2000133,
           "doc_title": "安装工具链",
-          "heading": "安装工具链",
+          "heading": "",
           "rrf": 0.030776515151515152
         },
         {
           "rank": 5,
-          "chunk_id": 84,
+          "chunk_id": 2000070,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › 构建可调试二进制",
-          "rrf": 0.02886002886002886
+          "rrf": 0.029386529386529386
         }
       ]
     },
@@ -226,8 +226,8 @@
         "build.sh release --make"
       ],
       "mode": "extractive",
-      "confidence": 0.8584,
-      "elapsed_ms": 203,
+      "confidence": 0.8593,
+      "elapsed_ms": 48,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -236,52 +236,52 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 33,
+          "chunk_id": 2000017,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制"
+          "heading": "编译生产二进制"
         },
         {
           "n": 3,
-          "chunk_id": 161,
+          "chunk_id": 2000145,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 配置测试构建"
+          "heading": "配置测试构建"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 33,
+          "chunk_id": 2000017,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制",
+          "heading": "编译生产二进制",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 83,
+          "chunk_id": 2000069,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb",
           "rrf": 0.031754032258064516
         },
         {
           "rank": 3,
-          "chunk_id": 161,
+          "chunk_id": 2000145,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 配置测试构建",
+          "heading": "配置测试构建",
           "rrf": 0.031746031746031744
         },
         {
           "rank": 4,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制",
+          "heading": "编译 Sanity 二进制",
           "rrf": 0.031054405392392875
         },
         {
           "rank": 5,
-          "chunk_id": 159,
+          "chunk_id": 2000143,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › 验证环境",
-          "rrf": 0.03076923076923077
+          "heading": "验证环境",
+          "rrf": 0.031009615384615385
         }
       ]
     },
@@ -294,7 +294,7 @@
       ],
       "mode": "extractive",
       "confidence": 0.8395,
-      "elapsed_ms": 195,
+      "elapsed_ms": 59,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -303,52 +303,52 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 137,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000124,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest"
         },
         {
           "n": 3,
-          "chunk_id": 35,
+          "chunk_id": 2000019,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 运行本地实例"
+          "heading": "运行本地实例"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 137,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000124,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest",
           "rrf": 0.03252247488101534
         },
         {
           "rank": 2,
-          "chunk_id": 138,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000125,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest › 背景",
           "rrf": 0.03200204813108039
         },
         {
           "rank": 3,
-          "chunk_id": 35,
+          "chunk_id": 2000019,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 运行本地实例",
+          "heading": "运行本地实例",
           "rrf": 0.03149801587301587
         },
         {
           "rank": 4,
-          "chunk_id": 141,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
-          "heading": "使用 obd.sh 运行 mysqltest › 执行步骤 › 步骤 2: 运行 mysqltest 测试",
-          "rrf": 0.030330882352941176
+          "chunk_id": 2000143,
+          "doc_title": "安装工具链",
+          "heading": "验证环境",
+          "rrf": 0.029877369007803793
         },
         {
           "rank": 5,
-          "chunk_id": 159,
-          "doc_title": "安装工具链",
-          "heading": "安装工具链 › 验证环境",
-          "rrf": 0.02900988017658188
+          "chunk_id": 2000128,
+          "doc_title": "运行 mysqltest",
+          "heading": "使用 obd.sh 运行 mysqltest › 执行步骤 › 步骤 2: 运行 mysqltest 测试",
+          "rrf": 0.028309409888357256
         }
       ]
     },
@@ -361,61 +361,61 @@
       ],
       "mode": "extractive",
       "confidence": 1.0,
-      "elapsed_ms": 200,
-      "recall_at_5": false,
-      "citation_hit": false,
+      "elapsed_ms": 60,
+      "recall_at_5": true,
+      "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《安装工具链》的原文：\n- 仓库固定使用 Rust `1.98.1`，需要 `clippy` 组件，并声明以下目标： x86_64-unknown-linux-gnu [2]\n- seekdb 使用 CMake、Rust 以及仓库管理的编译器和依赖集合。 [1]\n- 先安装 Rust 和少量宿主机工具，再由 `./build.sh release --init` 将固定版本的 C/C++ 构建依赖准备到 `deps/3rd`。 [1]",
+      "answer": "根据《安装工具链》的原文：\n- 仓库固定使用 Rust `1.97.1`，需要 `clippy` 组件，并声明以下目标： x86_64-unknown-linux-gnu [2]\n- seekdb 使用 CMake、Rust 以及仓库管理的编译器和依赖集合。 [1]\n- 先安装 Rust 和少量宿主机工具，再由 `./build.sh release --init` 将固定版本的 C/C++ 构建依赖准备到 `deps/3rd`。 [1]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 147,
+          "chunk_id": 2000133,
           "doc_title": "安装工具链",
-          "heading": "安装工具链"
+          "heading": ""
         },
         {
           "n": 2,
-          "chunk_id": 149,
+          "chunk_id": 2000136,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › Rust"
+          "heading": "Rust"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 147,
+          "chunk_id": 2000133,
           "doc_title": "安装工具链",
-          "heading": "安装工具链",
+          "heading": "",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 149,
+          "chunk_id": 2000136,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › Rust",
-          "rrf": 0.03021353930031804
+          "heading": "Rust",
+          "rrf": 0.03128054740957967
         },
         {
           "rank": 3,
-          "chunk_id": 150,
+          "chunk_id": 2000143,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › Rust",
-          "rrf": 0.029571646010002173
+          "heading": "验证环境",
+          "rrf": 0.029236022193768675
         },
         {
           "rank": 4,
-          "chunk_id": 159,
+          "chunk_id": 2000135,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › 验证环境",
-          "rrf": 0.028665028665028666
+          "heading": "Rust",
+          "rrf": 0.028693528693528692
         },
         {
           "rank": 5,
-          "chunk_id": 170,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000025,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 禁止使用STL容器",
-          "rrf": 0.02844551282051282
+          "rrf": 0.028371628371628373
         }
       ]
     },
@@ -427,8 +427,8 @@
         "使用 C++ 的桌面开发"
       ],
       "mode": "extractive",
-      "confidence": 0.7647,
-      "elapsed_ms": 345,
+      "confidence": 0.7685,
+      "elapsed_ms": 58,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -437,52 +437,52 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制"
+          "heading": "编译 Sanity 二进制"
         },
         {
           "n": 2,
-          "chunk_id": 158,
+          "chunk_id": 2000142,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › Windows 宿主机依赖"
+          "heading": "Windows 宿主机依赖"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 34,
+          "chunk_id": 2000018,
           "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译 Sanity 二进制",
-          "rrf": 0.0315136476426799
+          "heading": "编译 Sanity 二进制",
+          "rrf": 0.031054405392392875
         },
         {
           "rank": 2,
-          "chunk_id": 158,
+          "chunk_id": 2000142,
           "doc_title": "安装工具链",
-          "heading": "安装工具链 › Windows 宿主机依赖",
-          "rrf": 0.03009207275993712
+          "heading": "Windows 宿主机依赖",
+          "rrf": 0.030886196246139225
         },
         {
           "rank": 3,
-          "chunk_id": 176,
-          "doc_title": "C++ 命名与函数约定",
-          "heading": "一些约定函数接口 › init/destroy",
-          "rrf": 0.029957522915269395
+          "chunk_id": 2000017,
+          "doc_title": "获取代码、编译并运行 seekdb",
+          "heading": "编译生产二进制",
+          "rrf": 0.029910714285714284
         },
         {
           "rank": 4,
-          "chunk_id": 137,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
-          "heading": "使用 obd.sh 运行 mysqltest",
-          "rrf": 0.029857397504456328
+          "chunk_id": 2000031,
+          "doc_title": "编程惯例",
+          "heading": "一些约定函数接口 › init/destroy",
+          "rrf": 0.02976190476190476
         },
         {
           "rank": 5,
-          "chunk_id": 33,
-          "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制",
-          "rrf": 0.02886002886002886
+          "chunk_id": 2000124,
+          "doc_title": "运行 mysqltest",
+          "heading": "使用 obd.sh 运行 mysqltest",
+          "rrf": 0.029437229437229435
         }
       ]
     },
@@ -494,8 +494,8 @@
         "gdb /path/to/seekdb /path/to/core"
       ],
       "mode": "extractive",
-      "confidence": 0.8321,
-      "elapsed_ms": 215,
+      "confidence": 0.8353,
+      "elapsed_ms": 52,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -504,7 +504,7 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 85,
+          "chunk_id": 2000071,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › 使用 GDB 或 LLDB"
         }
@@ -512,38 +512,38 @@
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 85,
+          "chunk_id": 2000071,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › 使用 GDB 或 LLDB",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 84,
+          "chunk_id": 2000070,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › 构建可调试二进制",
           "rrf": 0.03200204813108039
         },
         {
           "rank": 3,
-          "chunk_id": 90,
+          "chunk_id": 2000076,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › SQL 执行跟踪",
-          "rrf": 0.03036576949620428
+          "rrf": 0.030158730158730156
         },
         {
           "rank": 4,
-          "chunk_id": 89,
+          "chunk_id": 2000075,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › 打印并解析调用栈",
-          "rrf": 0.02803379416282642
+          "rrf": 0.02832415420928403
         },
         {
           "rank": 5,
-          "chunk_id": 124,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 一些其它细节 › ERROR 日志",
-          "rrf": 0.026878868258178604
+          "chunk_id": 2000103,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 线程标识",
+          "rrf": 0.027031963470319637
         }
       ]
     },
@@ -555,56 +555,56 @@
         "syslog_level"
       ],
       "mode": "extractive",
-      "confidence": 0.8447,
-      "elapsed_ms": 176,
+      "confidence": 0.8523,
+      "elapsed_ms": 58,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《系统日志介绍》的原文：\n- - seekdb 程序在启动时会读取配置文件或通过命令行参数输入系统日志级别配置，配置项名称是`syslog_level`。 [1]\n- - 通过SQL HINT修改执行请求时的日志级别，比如 `select /*+ log_level(\"ERROR\") */ * from foo; [1]\n- - 启动后也可以通过MySQL客户端连接，执行SQL命令 `alter system set syslog_level='DEBUG`; [1]",
+      "answer": "根据《OceanBase seekdb 系统日志介绍》的原文：\n- - seekdb 程序在启动时会读取配置文件或通过命令行参数输入系统日志级别配置，配置项名称是`syslog_level`。 [1]\n- - 通过SQL HINT修改执行请求时的日志级别，比如 `select /*+ log_level(\"ERROR\") */ * from foo; [1]\n- - 启动后也可以通过MySQL客户端连接，执行SQL命令 `alter system set syslog_level='DEBUG`; [1]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 97,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志级别"
+          "chunk_id": 2000083,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志级别"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 97,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志级别",
-          "rrf": 0.032266458495966696
+          "chunk_id": 2000083,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志级别",
+          "rrf": 0.03252247488101534
         },
         {
           "rank": 2,
-          "chunk_id": 96,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志级别",
-          "rrf": 0.0315136476426799
+          "chunk_id": 2000080,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "系统日志介绍 › 日志参数",
+          "rrf": 0.031746031746031744
         },
         {
           "rank": 3,
-          "chunk_id": 94,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 系统日志介绍 › 日志参数",
-          "rrf": 0.03149801587301587
+          "chunk_id": 2000082,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志级别",
+          "rrf": 0.031009615384615385
         },
         {
           "rank": 4,
-          "chunk_id": 115,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志中的一些实现细节 › 日志模块",
-          "rrf": 0.030330882352941176
+          "chunk_id": 2000101,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 日志模块",
+          "rrf": 0.03055037313432836
         },
         {
           "rank": 5,
-          "chunk_id": 88,
+          "chunk_id": 2000074,
           "doc_title": "调试 seekdb",
           "heading": "调试 seekdb › 调试时调整日志配置",
-          "rrf": 0.03028233151183971
+          "rrf": 0.03009207275993712
         }
       ]
     },
@@ -616,62 +616,62 @@
         "5MB"
       ],
       "mode": "extractive",
-      "confidence": 0.8883,
-      "elapsed_ms": 240,
+      "confidence": 0.8912,
+      "elapsed_ms": 47,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《系统日志介绍》的原文：\n- | `syslog_io_bandwidth_limit` | `5MB` | syslog I/O 带宽限制 | [1]\n- seekdb 对WARN级别的日志做了限流，每个错误码每秒钟默认限制输出200条日志。 [2]\n- | `diag_syslog_per_error_limit` | `200` | 每个错误码每秒允许的 DIAG 日志数 | [1]",
+      "answer": "根据《OceanBase seekdb 系统日志介绍》的原文：\n- | `syslog_io_bandwidth_limit` | `5MB` | syslog I/O 带宽限制 | [1]\n- seekdb 对WARN级别的日志做了限流，每个错误码每秒钟默认限制输出200条日志。 [2]\n- | `diag_syslog_per_error_limit` | `200` | 每个错误码每秒允许的 DIAG 日志数 | [1]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 94,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 系统日志介绍 › 日志参数"
+          "chunk_id": 2000080,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "系统日志介绍 › 日志参数"
         },
         {
           "n": 2,
-          "chunk_id": 118,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志中的一些实现细节 › 日志限速"
+          "chunk_id": 2000104,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 日志限速"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 94,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 系统日志介绍 › 日志参数",
+          "chunk_id": 2000080,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "系统日志介绍 › 日志参数",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 118,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志中的一些实现细节 › 日志限速",
-          "rrf": 0.03200204813108039
+          "chunk_id": 2000104,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 日志限速",
+          "rrf": 0.03225806451612903
         },
         {
           "rank": 3,
-          "chunk_id": 95,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志回收",
-          "rrf": 0.03149801587301587
+          "chunk_id": 2000081,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志回收",
+          "rrf": 0.031746031746031744
         },
         {
           "rank": 4,
-          "chunk_id": 126,
-          "doc_title": "内存管理与内存预算",
+          "chunk_id": 2000113,
+          "doc_title": "内存管理",
           "heading": "简介 › 运行时内存预算",
           "rrf": 0.030330882352941176
         },
         {
           "rank": 5,
-          "chunk_id": 146,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
-          "heading": "使用 obd.sh 运行 mysqltest › 附录",
-          "rrf": 0.028985507246376812
+          "chunk_id": 2000105,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 日志限速",
+          "rrf": 0.030090497737556562
         }
       ]
     },
@@ -683,62 +683,62 @@
         "max_syslog_file_count"
       ],
       "mode": "extractive",
-      "confidence": 0.8156,
-      "elapsed_ms": 165,
+      "confidence": 0.8176,
+      "elapsed_ms": 73,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《系统日志介绍》的原文：\n- | `max_syslog_file_count` | `2` | 每种日志文件的最大保留数量； [1]\n- | `syslog_file_uncompressed_count` | `0` | 至少保留多少个不压缩的归档日志文件 | [1]\n- 在 `max_syslog_file_count > 0` 的前提下，就可能会调用 `ObLogger::rotate_log` 函数，如果该种日志文件数量超过上限 `max_syslog_file_count`，就会删掉最旧的一个日志文件。 [2]",
+      "answer": "根据《OceanBase seekdb 系统日志介绍》的原文：\n- | `max_syslog_file_count` | `2` | 每种日志文件的最大保留数量； [1]\n- | `syslog_file_uncompressed_count` | `0` | 至少保留多少个不压缩的归档日志文件 | [1]\n- 在 `max_syslog_file_count > 0` 的前提下，就可能会调用 `ObLogger::rotate_log` 函数，如果该种日志文件数量超过上限 `max_syslog_file_count`，就会删掉最旧的一个日志文件。 [2]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 94,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 系统日志介绍 › 日志参数"
+          "chunk_id": 2000080,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "系统日志介绍 › 日志参数"
         },
         {
           "n": 2,
-          "chunk_id": 95,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志回收"
+          "chunk_id": 2000081,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志回收"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 94,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 系统日志介绍 › 日志参数",
+          "chunk_id": 2000080,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "系统日志介绍 › 日志参数",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 95,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志回收",
+          "chunk_id": 2000081,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志回收",
           "rrf": 0.03225806451612903
         },
         {
           "rank": 3,
-          "chunk_id": 118,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志中的一些实现细节 › 日志限速",
-          "rrf": 0.03125763125763126
+          "chunk_id": 2000104,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 日志限速",
+          "rrf": 0.03149801587301587
         },
         {
           "rank": 4,
-          "chunk_id": 146,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
-          "heading": "使用 obd.sh 运行 mysqltest › 附录",
-          "rrf": 0.02871794871794872
+          "chunk_id": 2000083,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志级别",
+          "rrf": 0.029236022193768675
         },
         {
           "rank": 5,
-          "chunk_id": 97,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志级别",
-          "rrf": 0.027783137179239824
+          "chunk_id": 2000132,
+          "doc_title": "运行 mysqltest",
+          "heading": "使用 obd.sh 运行 mysqltest › 附录",
+          "rrf": 0.028083267871170464
         }
       ]
     },
@@ -750,56 +750,56 @@
         "80%"
       ],
       "mode": "extractive",
-      "confidence": 0.996,
-      "elapsed_ms": 176,
+      "confidence": 1.0,
+      "elapsed_ms": 59,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《内存管理与内存预算》的原文：\n- 自动值以 80% 为目标，在条件允许时至少为系统预留 1 GiB，并且不会小于 1 GiB。 [1]\n- | 参数 | 设置为 `0M` 时的默认行为 | [1]\n- 默认值为 `0M`，表示根据 cgroup 限制和物理内存中较小的有效容量自动计算。 [1]",
+      "answer": "根据《内存管理》的原文：\n- 自动值以 80% 为目标，在条件允许时至少为系统预留 1 GiB，并且不会小于 1 GiB。 [1]\n- | 参数 | 设置为 `0M` 时的默认行为 | [1]\n- 默认值为 `0M`，表示根据 cgroup 限制和物理内存中较小的有效容量自动计算。 [1]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 126,
-          "doc_title": "内存管理与内存预算",
+          "chunk_id": 2000113,
+          "doc_title": "内存管理",
           "heading": "简介 › 运行时内存预算"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 126,
-          "doc_title": "内存管理与内存预算",
+          "chunk_id": 2000113,
+          "doc_title": "内存管理",
           "heading": "简介 › 运行时内存预算",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 145,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000131,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest › 附录",
-          "rrf": 0.029083245521601686
+          "rrf": 0.029957522915269395
         },
         {
           "rank": 3,
-          "chunk_id": 94,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 系统日志介绍 › 日志参数",
-          "rrf": 0.029030910609857977
+          "chunk_id": 2000080,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "系统日志介绍 › 日志参数",
+          "rrf": 0.028958333333333336
         },
         {
           "rank": 4,
-          "chunk_id": 95,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志回收",
-          "rrf": 0.026838432635534086
+          "chunk_id": 2000118,
+          "doc_title": "内存管理",
+          "heading": "OceanBase seekdb 内存管理常用接口与方式 › ObMemAttr 介绍",
+          "rrf": 0.02674825174825175
         },
         {
           "rank": 5,
-          "chunk_id": 132,
-          "doc_title": "内存管理与内存预算",
-          "heading": "OceanBase seekdb 内存管理常用接口与方式 › ObMemAttr 介绍",
-          "rrf": 0.024961240310077522
+          "chunk_id": 2000081,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志回收",
+          "rrf": 0.02625745950554135
         }
       ]
     },
@@ -811,56 +811,56 @@
         "1 GiB"
       ],
       "mode": "extractive",
-      "confidence": 0.8625,
-      "elapsed_ms": 2680,
+      "confidence": 0.8794,
+      "elapsed_ms": 51,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《内存管理与内存预算》的原文：\n- 显式非零值不得小于 1 GiB。 [1]\n- | 参数 | 设置为 `0M` 时的默认行为 | [1]\n- 自动值以 80% 为目标，在条件允许时至少为系统预留 1 GiB，并且不会小于 1 GiB。 [1]",
+      "answer": "根据《内存管理》的原文：\n- 显式非零值不得小于 1 GiB。 [1]\n- | 参数 | 设置为 `0M` 时的默认行为 | [1]\n- 自动值以 80% 为目标，在条件允许时至少为系统预留 1 GiB，并且不会小于 1 GiB。 [1]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 126,
-          "doc_title": "内存管理与内存预算",
+          "chunk_id": 2000113,
+          "doc_title": "内存管理",
           "heading": "简介 › 运行时内存预算"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 126,
-          "doc_title": "内存管理与内存预算",
+          "chunk_id": 2000113,
+          "doc_title": "内存管理",
           "heading": "简介 › 运行时内存预算",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 95,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志回收",
-          "rrf": 0.028125
+          "chunk_id": 2000118,
+          "doc_title": "内存管理",
+          "heading": "OceanBase seekdb 内存管理常用接口与方式 › ObMemAttr 介绍",
+          "rrf": 0.028283227848101264
         },
         {
           "rank": 3,
-          "chunk_id": 131,
-          "doc_title": "内存管理与内存预算",
-          "heading": "OceanBase seekdb 内存管理常用接口与方式 › ObMemAttr 介绍",
-          "rrf": 0.02728937728937729
+          "chunk_id": 2000081,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志回收",
+          "rrf": 0.02792120864410021
         },
         {
           "rank": 4,
-          "chunk_id": 145,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000131,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest › 附录",
-          "rrf": 0.02632034632034632
+          "rrf": 0.027402402402402402
         },
         {
           "rank": 5,
-          "chunk_id": 133,
-          "doc_title": "内存管理与内存预算",
-          "heading": "OceanBase seekdb 内存管理常用接口与方式 › ObMemAttr 介绍",
-          "rrf": 0.016129032258064516
+          "chunk_id": 2000080,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "系统日志介绍 › 日志参数",
+          "rrf": 0.02519288301054952
         }
       ]
     },
@@ -872,56 +872,56 @@
         "多次申请一次释放"
       ],
       "mode": "extractive",
-      "confidence": 0.9028,
-      "elapsed_ms": 304,
+      "confidence": 0.8868,
+      "elapsed_ms": 48,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《内存管理与内存预算》的原文：\n- 设计特点是多次申请一次释放，只有reset或者析构才真正释放内存，在这之前申请的内存即使主动调用free也不会有任何效用。 [1]\n- ObArenaAllocator 适用于很多小内存申请，短时间内存会释放的场景。 [1]\n- 比如一次SQL请求中，会频繁申请很多小内存，并且这些小内存的生命周期会持续整个请求期间。 [1]",
+      "answer": "根据《内存管理》的原文：\n- 设计特点是多次申请一次释放，只有reset或者析构才真正释放内存，在这之前申请的内存即使主动调用free也不会有任何效用。 [1]\n- ObArenaAllocator 适用于很多小内存申请，短时间内存会释放的场景。 [1]\n- 比如一次SQL请求中，会频繁申请很多小内存，并且这些小内存的生命周期会持续整个请求期间。 [1]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 130,
-          "doc_title": "内存管理与内存预算",
+          "chunk_id": 2000117,
+          "doc_title": "内存管理",
           "heading": "OceanBase seekdb 内存管理常用接口与方式 › ObArenaAllocator"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 130,
-          "doc_title": "内存管理与内存预算",
+          "chunk_id": 2000117,
+          "doc_title": "内存管理",
           "heading": "OceanBase seekdb 内存管理常用接口与方式 › ObArenaAllocator",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 58,
-          "doc_title": "seekdb C++ 容器库",
-          "heading": "链表",
-          "rrf": 0.02878726010616578
+          "chunk_id": 2000112,
+          "doc_title": "内存管理",
+          "heading": "简介",
+          "rrf": 0.029083245521601686
         },
         {
           "rank": 3,
-          "chunk_id": 57,
-          "doc_title": "seekdb C++ 容器库",
-          "heading": "数组 › ObVector",
-          "rrf": 0.028693528693528692
+          "chunk_id": 2000064,
+          "doc_title": "基础数据结构",
+          "heading": "Map › ObLinkHashMap",
+          "rrf": 0.02878726010616578
         },
         {
           "rank": 4,
-          "chunk_id": 125,
-          "doc_title": "内存管理与内存预算",
-          "heading": "简介",
-          "rrf": 0.02854251012145749
+          "chunk_id": 2000045,
+          "doc_title": "基础数据结构",
+          "heading": "链表",
+          "rrf": 0.02821869488536155
         },
         {
           "rank": 5,
-          "chunk_id": 78,
-          "doc_title": "seekdb C++ 容器库",
-          "heading": "Map › ObLinkHashMap",
-          "rrf": 0.02797067901234568
+          "chunk_id": 2000044,
+          "doc_title": "基础数据结构",
+          "heading": "数组 › ObVector",
+          "rrf": 0.028125
         }
       ]
     },
@@ -934,7 +934,7 @@
       ],
       "mode": "extractive",
       "confidence": 1.0,
-      "elapsed_ms": 219,
+      "elapsed_ms": 56,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -943,52 +943,52 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 170,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000025,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 禁止使用STL容器"
         },
         {
           "n": 2,
-          "chunk_id": 48,
-          "doc_title": "seekdb C++ 容器库",
+          "chunk_id": 2000035,
+          "doc_title": "基础数据结构",
           "heading": "介绍"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 170,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000025,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 禁止使用STL容器",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 48,
-          "doc_title": "seekdb C++ 容器库",
+          "chunk_id": 2000035,
+          "doc_title": "基础数据结构",
           "heading": "介绍",
           "rrf": 0.03225806451612903
         },
         {
           "rank": 3,
-          "chunk_id": 82,
-          "doc_title": "seekdb C++ 容器库",
+          "chunk_id": 2000068,
+          "doc_title": "基础数据结构",
           "heading": "其它",
           "rrf": 0.03149801587301587
         },
         {
           "rank": 4,
-          "chunk_id": 69,
-          "doc_title": "seekdb C++ 容器库",
+          "chunk_id": 2000057,
+          "doc_title": "基础数据结构",
           "heading": "Map › ObHashMap › ObHashMap 介绍",
-          "rrf": 0.029273504273504274
+          "rrf": 0.030309988518943745
         },
         {
           "rank": 5,
-          "chunk_id": 52,
-          "doc_title": "seekdb C++ 容器库",
-          "heading": "数组",
-          "rrf": 0.029236022193768675
+          "chunk_id": 2000026,
+          "doc_title": "编程惯例",
+          "heading": "函数编程习惯 › 单入口单出口",
+          "rrf": 0.028782894736842105
         }
       ]
     },
@@ -1001,67 +1001,67 @@
       ],
       "mode": "extractive",
       "confidence": 0.5821,
-      "elapsed_ms": 303,
+      "elapsed_ms": 45,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《C++ 命名与函数约定》的原文：\n- 强制要求所有函数在末尾返回，禁止中途调用return、goto、exit等全局跳转指令。 [1]\n- 对于绝大多数函数，都要求函数具备int返回值，返回值可以使用错误码 `ob_errno.h` 解释。 [3]\n- seekdb 要求只要函数有返回值，就必须对返回值做检测，做到“能检就检”。 [2]",
+      "answer": "根据《编程惯例》的原文：\n- 强制要求所有函数在末尾返回，禁止中途调用return、goto、exit等全局跳转指令。 [1]\n- 对于绝大多数函数，都要求函数具备int返回值，返回值可以使用错误码 `ob_errno.h` 解释。 [3]\n- seekdb 要求只要函数有返回值，就必须对返回值做检测，做到“能检就检”。 [2]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 171,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000026,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 单入口单出口"
         },
         {
           "n": 2,
-          "chunk_id": 175,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000030,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 需要判断所有函数值与函数参数有效性"
         },
         {
           "n": 3,
-          "chunk_id": 174,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000029,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 函数返回错误码"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 171,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000026,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 单入口单出口",
           "rrf": 0.032266458495966696
         },
         {
           "rank": 2,
-          "chunk_id": 175,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000030,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 需要判断所有函数值与函数参数有效性",
           "rrf": 0.032266458495966696
         },
         {
           "rank": 3,
-          "chunk_id": 174,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000029,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 函数返回错误码",
           "rrf": 0.03225806451612903
         },
         {
           "rank": 4,
-          "chunk_id": 136,
-          "doc_title": "内存管理与内存预算",
-          "heading": "OceanBase seekdb 内存管理常用接口与方式 › SMART_CALL",
-          "rrf": 0.030776515151515152
+          "chunk_id": 2000094,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "如何打印日志 › 日志参数常用宏介绍",
+          "rrf": 0.030330882352941176
         },
         {
           "rank": 5,
-          "chunk_id": 176,
-          "doc_title": "C++ 命名与函数约定",
-          "heading": "一些约定函数接口 › init/destroy",
-          "rrf": 0.030309988518943745
+          "chunk_id": 2000123,
+          "doc_title": "内存管理",
+          "heading": "OceanBase seekdb 内存管理常用接口与方式 › SMART_CALL",
+          "rrf": 0.030303030303030304
         }
       ]
     },
@@ -1073,62 +1073,62 @@
         "不管理内存"
       ],
       "mode": "extractive",
-      "confidence": 0.9465,
-      "elapsed_ms": 200,
+      "confidence": 0.9401,
+      "elapsed_ms": 44,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《seekdb C++ 容器库》的原文：\n- ObArray 自己管理内存，在声明ObArray模板类时，需要指定分配器，或者使用默认分配器 `ModulePageAllocator`。 [2]\n- 1. ObString 不管理内存，内存由外部传入，内存buffer的生命周期也由外部控制； [1]\n- 在介绍ObString的接口之前，先介绍一下ObSring的内存管理方式，这样会更加容易理解ObString的接口设计。 [1]",
+      "answer": "根据《基础数据结构》的原文：\n- ObArray 自己管理内存，在声明ObArray模板类时，需要指定分配器，或者使用默认分配器 `ModulePageAllocator`。 [1]\n- 1. ObString 不管理内存，内存由外部传入，内存buffer的生命周期也由外部控制； [2]\n- 在介绍ObString的接口之前，先介绍一下ObSring的内存管理方式，这样会更加容易理解ObString的接口设计。 [2]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 49,
-          "doc_title": "seekdb C++ 容器库",
-          "heading": "字符串"
+          "chunk_id": 2000042,
+          "doc_title": "基础数据结构",
+          "heading": "数组 › ObArray"
         },
         {
           "n": 2,
-          "chunk_id": 55,
-          "doc_title": "seekdb C++ 容器库",
-          "heading": "数组 › ObArray"
+          "chunk_id": 2000036,
+          "doc_title": "基础数据结构",
+          "heading": "字符串"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 49,
-          "doc_title": "seekdb C++ 容器库",
-          "heading": "字符串",
-          "rrf": 0.03278688524590164
+          "chunk_id": 2000042,
+          "doc_title": "基础数据结构",
+          "heading": "数组 › ObArray",
+          "rrf": 0.03252247488101534
         },
         {
           "rank": 2,
-          "chunk_id": 55,
-          "doc_title": "seekdb C++ 容器库",
-          "heading": "数组 › ObArray",
-          "rrf": 0.03225806451612903
+          "chunk_id": 2000036,
+          "doc_title": "基础数据结构",
+          "heading": "字符串",
+          "rrf": 0.03252247488101534
         },
         {
           "rank": 3,
-          "chunk_id": 50,
-          "doc_title": "seekdb C++ 容器库",
+          "chunk_id": 2000037,
+          "doc_title": "基础数据结构",
           "heading": "字符串",
-          "rrf": 0.03057889822595705
+          "rrf": 0.029957522915269395
         },
         {
           "rank": 4,
-          "chunk_id": 51,
-          "doc_title": "seekdb C++ 容器库",
+          "chunk_id": 2000038,
+          "doc_title": "基础数据结构",
           "heading": "字符串",
-          "rrf": 0.029437229437229435
+          "rrf": 0.029877369007803793
         },
         {
           "rank": 5,
-          "chunk_id": 128,
-          "doc_title": "内存管理与内存预算",
-          "heading": "OceanBase seekdb 内存管理常用接口与方式 › ob_malloc",
-          "rrf": 0.029206349206349208
+          "chunk_id": 2000052,
+          "doc_title": "基础数据结构",
+          "heading": "链表 › ObDList",
+          "rrf": 0.029631255487269532
         }
       ]
     },
@@ -1140,8 +1140,8 @@
         "make -C build_release help"
       ],
       "mode": "extractive",
-      "confidence": 0.9246,
-      "elapsed_ms": 112,
+      "confidence": 0.9335,
+      "elapsed_ms": 43,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
@@ -1150,58 +1150,58 @@
       "citations": [
         {
           "n": 1,
-          "chunk_id": 162,
+          "chunk_id": 2000146,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 选择并编译模块"
+          "heading": "选择并编译模块"
         },
         {
           "n": 2,
-          "chunk_id": 165,
+          "chunk_id": 2000149,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 编译并运行全部模块"
+          "heading": "编译并运行全部模块"
         },
         {
           "n": 3,
-          "chunk_id": 161,
+          "chunk_id": 2000145,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 配置测试构建"
+          "heading": "配置测试构建"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 162,
+          "chunk_id": 2000146,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 选择并编译模块",
+          "heading": "选择并编译模块",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 165,
+          "chunk_id": 2000149,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 编译并运行全部模块",
+          "heading": "编译并运行全部模块",
           "rrf": 0.03225806451612903
         },
         {
           "rank": 3,
-          "chunk_id": 161,
+          "chunk_id": 2000145,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 配置测试构建",
+          "heading": "配置测试构建",
           "rrf": 0.03125763125763126
         },
         {
           "rank": 4,
-          "chunk_id": 160,
+          "chunk_id": 2000144,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试",
+          "heading": "",
           "rrf": 0.03125763125763126
         },
         {
           "rank": 5,
-          "chunk_id": 163,
-          "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 运行模块测试",
-          "rrf": 0.029513888888888888
+          "chunk_id": 2000017,
+          "doc_title": "获取代码、编译并运行 seekdb",
+          "heading": "编译生产二进制",
+          "rrf": 0.029138513513513514
         }
       ]
     },
@@ -1213,62 +1213,68 @@
         "make -C build_release pretest"
       ],
       "mode": "extractive",
-      "confidence": 0.7858,
-      "elapsed_ms": 277,
+      "confidence": 0.7918,
+      "elapsed_ms": 45,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《编写与运行单元测试》的原文：\n- `pretest` 目标会编译全部 CMake 单元测试模块。 [1]\n- CMake 单元测试目标仅在 Linux 上提供。 [2]\n- Pull Request 的 CI 也会运行单元测试和 mysqltest。 [1]",
+      "answer": "根据资料原文：\n- `pretest` 目标会编译全部 CMake 单元测试模块。 [1]\n- CMake 单元测试目标仅在 Linux 上提供。 [2]\n- 在 Linux 上，同一套 CMake 构建还提供模块单元测试目标和聚合目标 `pretest`，具体用法参见[编写与运行单元测试](unittest.md)。 [4]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 165,
+          "chunk_id": 2000149,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 编译并运行全部模块"
+          "heading": "编译并运行全部模块"
         },
         {
           "n": 2,
-          "chunk_id": 161,
+          "chunk_id": 2000145,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 配置测试构建"
+          "heading": "配置测试构建"
+        },
+        {
+          "n": 4,
+          "chunk_id": 2000017,
+          "doc_title": "获取代码、编译并运行 seekdb",
+          "heading": "编译生产二进制"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 165,
+          "chunk_id": 2000149,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 编译并运行全部模块",
-          "rrf": 0.03278688524590164
+          "heading": "编译并运行全部模块",
+          "rrf": 0.03252247488101534
         },
         {
           "rank": 2,
-          "chunk_id": 161,
+          "chunk_id": 2000145,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 配置测试构建",
+          "heading": "配置测试构建",
           "rrf": 0.031746031746031744
         },
         {
           "rank": 3,
-          "chunk_id": 162,
+          "chunk_id": 2000146,
           "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试 › 选择并编译模块",
-          "rrf": 0.03128054740957967
+          "heading": "选择并编译模块",
+          "rrf": 0.031544957774465976
         },
         {
           "rank": 4,
-          "chunk_id": 160,
-          "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试",
-          "rrf": 0.031009615384615385
+          "chunk_id": 2000017,
+          "doc_title": "获取代码、编译并运行 seekdb",
+          "heading": "编译生产二进制",
+          "rrf": 0.031054405392392875
         },
         {
           "rank": 5,
-          "chunk_id": 33,
-          "doc_title": "获取代码、编译并运行 seekdb",
-          "heading": "获取代码、编译并运行 seekdb › 编译生产二进制",
-          "rrf": 0.030834914611005692
+          "chunk_id": 2000144,
+          "doc_title": "编写与运行单元测试",
+          "heading": "",
+          "rrf": 0.031009615384615385
         }
       ]
     },
@@ -1280,61 +1286,61 @@
         "mysqltest -n test --all"
       ],
       "mode": "extractive",
-      "confidence": 0.9215,
-      "elapsed_ms": 199,
+      "confidence": 0.8465,
+      "elapsed_ms": 47,
       "recall_at_5": true,
       "citation_hit": true,
       "refused": false,
       "reason": "未启用生成模型，使用原文摘录",
-      "answer": "根据《使用 obd.sh 运行 mysqltest》的原文：\n- 要使用 obd.sh 运行 mysqltest 测试，需要通过 obd.sh 部署 OceanBase seekdb 数据库。 [1]\n- 本文从编译源代码开始，使用示例介绍如何使用 obd.sh 部署 seekdb 数据库并运行 mysqltest 测试。 [1]\n- * 全部测试，即运行 `mysql_test/test_suite` 目录下的所有 suite，请参考以下命令。 [2]",
+      "answer": "根据《运行 mysqltest》的原文：\n- 要使用 obd.sh 运行 mysqltest 测试，需要通过 obd.sh 部署 OceanBase seekdb 数据库。 [1]\n- 本文从编译源代码开始，使用示例介绍如何使用 obd.sh 部署 seekdb 数据库并运行 mysqltest 测试。 [1]\n- * 全部测试，即运行 `mysql_test/test_suite` 目录下的所有 suite，请参考以下命令。 [4]",
       "citations": [
         {
           "n": 1,
-          "chunk_id": 137,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000124,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest"
         },
         {
-          "n": 2,
-          "chunk_id": 140,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "n": 4,
+          "chunk_id": 2000128,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest › 执行步骤 › 步骤 2: 运行 mysqltest 测试"
         }
       ],
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 137,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000124,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest",
-          "rrf": 0.031544957774465976
+          "rrf": 0.03177805800756621
         },
         {
           "rank": 2,
-          "chunk_id": 140,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
-          "heading": "使用 obd.sh 运行 mysqltest › 执行步骤 › 步骤 2: 运行 mysqltest 测试",
-          "rrf": 0.0315136476426799
-        },
-        {
-          "rank": 3,
-          "chunk_id": 142,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000129,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest › 附录",
           "rrf": 0.03131881575727918
         },
         {
-          "rank": 4,
-          "chunk_id": 139,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "rank": 3,
+          "chunk_id": 2000126,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest › 相关概念",
           "rrf": 0.03128054740957967
         },
         {
+          "rank": 4,
+          "chunk_id": 2000128,
+          "doc_title": "运行 mysqltest",
+          "heading": "使用 obd.sh 运行 mysqltest › 执行步骤 › 步骤 2: 运行 mysqltest 测试",
+          "rrf": 0.03128054740957967
+        },
+        {
           "rank": 5,
-          "chunk_id": 143,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
-          "heading": "使用 obd.sh 运行 mysqltest › 附录",
+          "chunk_id": 2000149,
+          "doc_title": "编写与运行单元测试",
+          "heading": "编译并运行全部模块",
           "rrf": 0.03057889822595705
         }
       ]
@@ -1348,7 +1354,7 @@
       ],
       "mode": "insufficient",
       "confidence": 0.6956,
-      "elapsed_ms": 29,
+      "elapsed_ms": 47,
       "recall_at_5": false,
       "citation_hit": false,
       "refused": true,
@@ -1358,38 +1364,38 @@
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 170,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000025,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 禁止使用STL容器",
-          "rrf": 0.032266458495966696
+          "rrf": 0.032018442622950824
         },
         {
           "rank": 2,
-          "chunk_id": 52,
-          "doc_title": "seekdb C++ 容器库",
+          "chunk_id": 2000039,
+          "doc_title": "基础数据结构",
           "heading": "数组",
-          "rrf": 0.028258706467661692
+          "rrf": 0.02803921568627451
         },
         {
           "rank": 3,
-          "chunk_id": 137,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000124,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest",
-          "rrf": 0.02821939586645469
+          "rrf": 0.028006267136701922
         },
         {
           "rank": 4,
-          "chunk_id": 116,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志中的一些实现细节 › 日志时间",
-          "rrf": 0.027443609022556388
+          "chunk_id": 2000102,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 日志时间",
+          "rrf": 0.027046783625730993
         },
         {
           "rank": 5,
-          "chunk_id": 167,
-          "doc_title": "C++ 命名与函数约定",
-          "heading": "命名习惯 › 文件命名",
-          "rrf": 0.026838432635534086
+          "chunk_id": 2000100,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 日志模块",
+          "rrf": 0.026992753623188405
         }
       ]
     },
@@ -1402,7 +1408,7 @@
       ],
       "mode": "insufficient",
       "confidence": 0.6447,
-      "elapsed_ms": 209,
+      "elapsed_ms": 54,
       "recall_at_5": false,
       "citation_hit": false,
       "refused": true,
@@ -1412,38 +1418,38 @@
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 116,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 日志中的一些实现细节 › 日志时间",
-          "rrf": 0.030886196246139225
+          "chunk_id": 2000102,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志中的一些实现细节 › 日志时间",
+          "rrf": 0.030679156908665108
         },
         {
           "rank": 2,
-          "chunk_id": 137,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000124,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest",
-          "rrf": 0.03055037313432836
+          "rrf": 0.030117753623188408
         },
         {
           "rank": 3,
-          "chunk_id": 99,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 如何打印日志",
-          "rrf": 0.029571646010002173
+          "chunk_id": 2000085,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "如何打印日志",
+          "rrf": 0.029386529386529386
         },
         {
           "rank": 4,
-          "chunk_id": 170,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000025,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 禁止使用STL容器",
-          "rrf": 0.029138513513513514
+          "rrf": 0.02871794871794872
         },
         {
           "rank": 5,
-          "chunk_id": 160,
-          "doc_title": "编写与运行单元测试",
-          "heading": "编写与运行单元测试",
-          "rrf": 0.02662057044079516
+          "chunk_id": 2000017,
+          "doc_title": "获取代码、编译并运行 seekdb",
+          "heading": "编译生产二进制",
+          "rrf": 0.026779422128259338
         }
       ]
     },
@@ -1457,7 +1463,7 @@
       ],
       "mode": "insufficient",
       "confidence": 0.6779,
-      "elapsed_ms": 244,
+      "elapsed_ms": 52,
       "recall_at_5": false,
       "citation_hit": false,
       "refused": true,
@@ -1467,38 +1473,38 @@
       "top_k": [
         {
           "rank": 1,
-          "chunk_id": 137,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000124,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest",
           "rrf": 0.03278688524590164
         },
         {
           "rank": 2,
-          "chunk_id": 138,
-          "doc_title": "使用 obd.sh 运行 mysqltest",
+          "chunk_id": 2000125,
+          "doc_title": "运行 mysqltest",
           "heading": "使用 obd.sh 运行 mysqltest › 背景",
           "rrf": 0.03225806451612903
         },
         {
           "rank": 3,
-          "chunk_id": 170,
-          "doc_title": "C++ 命名与函数约定",
+          "chunk_id": 2000025,
+          "doc_title": "编程惯例",
           "heading": "函数编程习惯 › 禁止使用STL容器",
-          "rrf": 0.029030910609857977
+          "rrf": 0.029386529386529386
         },
         {
           "rank": 4,
-          "chunk_id": 92,
-          "doc_title": "系统日志介绍",
-          "heading": "OceanBase seekdb 系统日志介绍 › 介绍",
-          "rrf": 0.02900988017658188
+          "chunk_id": 2000078,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "介绍",
+          "rrf": 0.0288981288981289
         },
         {
           "rank": 5,
-          "chunk_id": 166,
-          "doc_title": "C++ 命名与函数约定",
-          "heading": "",
-          "rrf": 0.02632034632034632
+          "chunk_id": 2000082,
+          "doc_title": "OceanBase seekdb 系统日志介绍",
+          "heading": "日志级别",
+          "rrf": 0.02797067901234568
         }
       ]
     }

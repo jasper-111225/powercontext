@@ -40,7 +40,7 @@
     </div>
     <dl class="facts">
       <div><dt>语料</dt><dd>9 篇 seekdb 开发者文档</dd></div>
-      <div><dt>片段</dt><dd>138 个（运行库）</dd></div>
+      <div><dt>片段</dt><dd>135 个（运行库）</dd></div>
       <div><dt>评测</dt><dd>23 题：20 可答 + 3 资料外</dd></div>
       <div><dt>部署</dt><dd>本地优先，无外部 API</dd></div>
     </dl>
@@ -276,10 +276,10 @@ POST /v1/memory/entries/list    <span class="c"># 读回</span></code></pre>
       <p class="section-note">20 道可答题 + 3 道资料外问题，语料为 9 篇 seekdb 官方开发者文档。运行 <code>scripts/eval.py</code> 生成逐题结果。</p>
     </div>
     <div class="metrics">
-      <div><strong>95%</strong><span>Recall@5（19/20）</span></div>
-      <div><strong>95%</strong><span>引用命中（19/20）</span></div>
+      <div><strong>100%</strong><span>Recall@5（20/20）</span></div>
+      <div><strong>100%</strong><span>引用命中（20/20）</span></div>
       <div><strong>100%</strong><span>拒答准确（3/3）</span></div>
-      <div><strong>209 ms</strong><span>中位耗时 p50</span></div>
+      <div><strong>52 ms</strong><span>中位耗时 p50</span></div>
     </div>
     <p class="fineprint">指标来自本机已验证环境的评测记录，写入 <code>docs/evidence/eval.json</code>；换语料或换模型后需要重新评测。</p>
   </section>
