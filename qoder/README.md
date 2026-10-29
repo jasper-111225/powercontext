@@ -145,12 +145,12 @@ seekdb 起法见 [部署题说明](https://github.com/oceanbase/seekdb)；如果
 ```bash
 cd qoder
 
-./scripts/setup.sh          # venv + 依赖 + 建库 + 灌入 9 篇示例语料（首次向量化约 8–20 分钟）
+./scripts/setup.sh          # venv + 依赖 + 建库 + 灌入 9 篇示例语料（内置向量缓存，通常 <1 分钟）
 ./scripts/pc_server.sh start  # 启动 PowerContext（记忆）
 ./scripts/run.sh            # http://127.0.0.1:8766
 ```
 
-`setup.sh` 会先检查 seekdb 与向量模型，再灌库；重复执行会命中向量缓存，很快。
+`setup.sh` 会先检查 seekdb 与向量模型，再灌库；仓库内置演示语料向量缓存，首次 clone 通常 <1 分钟；新导入的资料仍会实时调用向量模型。
 换语料：把文件放进 `data/corpus/`（可在 `manifest.json` 里给中文标题），然后 `python scripts/seed.py --reset`。
 Windows 下用 Git Bash 执行上述命令；脚本会自动选择 `.venv/Scripts/python.exe`。
 

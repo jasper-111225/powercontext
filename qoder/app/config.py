@@ -65,8 +65,8 @@ class Settings:
     embed_base: str = "http://127.0.0.1:11434"
     embed_model: str = "qwen3-embedding:0.6b"
     embed_dim: int = 1024
-    embed_batch: int = 4
-    embed_timeout: float = 180.0
+    embed_batch: int = 2
+    embed_timeout: float = 600.0
 
     llm_base: str = "http://127.0.0.1:11434"
     llm_model: str = "qwen2.5:0.5b"
@@ -157,8 +157,8 @@ class Settings:
             embed_base=_env(env, "JUDIAN_EMBED_BASE", "http://127.0.0.1:11434").rstrip("/"),
             embed_model=_env(env, "JUDIAN_EMBED_MODEL", "qwen3-embedding:0.6b"),
             embed_dim=_env_int(env, "JUDIAN_EMBED_DIM", 1024),
-            embed_batch=_env_int(env, "JUDIAN_EMBED_BATCH", 4),
-            embed_timeout=_env_float(env, "JUDIAN_EMBED_TIMEOUT", 180.0),
+            embed_batch=_env_int(env, "JUDIAN_EMBED_BATCH", 2),
+            embed_timeout=_env_float(env, "JUDIAN_EMBED_TIMEOUT", 600.0),
             llm_base=_env(env, "JUDIAN_LLM_BASE", "http://127.0.0.1:11434").rstrip("/"),
             llm_model=_env(env, "JUDIAN_LLM_MODEL", "qwen2.5:0.5b"),
             llm_timeout=_env_float(env, "JUDIAN_LLM_TIMEOUT", 60.0),

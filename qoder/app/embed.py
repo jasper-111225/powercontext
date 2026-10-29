@@ -38,7 +38,13 @@ class Embedder:
         self._cache_loaded = True
         path = self.settings.embed_cache_path
         if not path.exists():
-            return
+            # 仓库内置一份演示语料的向量缓存，首次 clone 无需等 CPU embedding；
+            # 新导入的文本仍会实时调用模型并写回 .runtime/embed_cache.json。
+            bundled = self.settings.root / "data" / "embed_cache.json"
+            if bundled.exists():
+                path = bundled
+            else:
+                return
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):

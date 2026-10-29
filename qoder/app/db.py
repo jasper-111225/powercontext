@@ -162,8 +162,10 @@ class SeekDB:
                     cursor.execute(statement)
 
     def ping(self) -> tuple[bool, str]:
+        # 服务器级探活：不指定 database，避免首次部署时目标库尚未创建就误报
+        # "Unknown database"，导致 setup/seed 还没走到 ensure_database 就失败。
         try:
-            with self.connect() as connection:
+            with self.connect(with_database=False) as connection:
                 with connection.cursor() as cursor:
                     cursor.execute("SELECT VERSION() AS version")
                     row = cursor.fetchone()
