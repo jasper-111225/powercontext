@@ -473,13 +473,22 @@ function renderEvidence(evidence, trace) {
     .join("");
   $$(".evidence-card", box).forEach((card) => {
     const expand = $('[data-action="expand"]', card);
+    const toggle = () => {
+      card.classList.toggle("expanded");
+      if (expand) {
+        expand.textContent = card.classList.contains("expanded") ? "收起原文" : "查看完整原文";
+      }
+    };
     if (expand) {
       expand.addEventListener("click", (event) => {
         event.stopPropagation();
-        card.classList.toggle("expanded");
-        expand.textContent = card.classList.contains("expanded") ? "收起原文" : "查看完整原文";
+        toggle();
       });
     }
+    card.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      toggle();
+    });
   });
   renderTrace(trace || {});
 }
@@ -695,6 +704,8 @@ function setView(view) {
   $$(".view").forEach((node) => node.classList.add("hidden"));
   const target = $(`#view-${view}`);
   if (target) target.classList.remove("hidden");
+  const workspace = $(".workspace");
+  if (workspace) workspace.classList.toggle("no-evidence", view !== "ask");
   if (view === "library") renderLibraryView();
   if (view === "eval") loadEval();
 }
